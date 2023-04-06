@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 25.0.1705.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aptabase.MAUI", "Aptabase.MAUI.csproj", "{CDBA84BA-F326-4162-B509-31892E9CAF2E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorldApp", "examples\HelloWorldApp\HelloWorldApp.csproj", "{301A582D-DA3E-4A8C-BF0C-3A0A8D57F865}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CDBA84BA-F326-4162-B509-31892E9CAF2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDBA84BA-F326-4162-B509-31892E9CAF2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDBA84BA-F326-4162-B509-31892E9CAF2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDBA84BA-F326-4162-B509-31892E9CAF2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{301A582D-DA3E-4A8C-BF0C-3A0A8D57F865}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{301A582D-DA3E-4A8C-BF0C-3A0A8D57F865}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{301A582D-DA3E-4A8C-BF0C-3A0A8D57F865}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{301A582D-DA3E-4A8C-BF0C-3A0A8D57F865}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C696E39C-8A3B-4FE3-BBB1-95FE24E67DCD}
+	EndGlobalSection
+EndGlobal
