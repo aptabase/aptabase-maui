@@ -1,7 +1,4 @@
-﻿using System;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Reflection;
+﻿using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 
 namespace Aptabase.Maui;
