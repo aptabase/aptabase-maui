@@ -1,17 +1,22 @@
-﻿namespace HelloWorldApp;
+﻿using Aptabase.Maui;
+
+namespace HelloWorld;
 
 public partial class MainPage : ContentPage
 {
-	int count = 0;
+	IAptabaseClient _aptabase;
+    int count = 0;
 
-	public MainPage()
+	public MainPage(IAptabaseClient aptabase)
 	{
 		InitializeComponent();
+		_aptabase = aptabase;
 	}
 
 	private void OnCounterClicked(object sender, EventArgs e)
 	{
 		count++;
+		_aptabase.TrackEvent("Increment");
 
 		if (count == 1)
 			CounterBtn.Text = $"Clicked {count} time";

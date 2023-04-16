@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<PackageId>Aptabase.Maui</PackageId>
+		<Version>0.0.1</Version>
+		<Authors>Guilherme Oenning</Authors>
+		<Company>Sumbit Labs Ltd</Company>
 		<TargetFrameworks>net7.0;net7.0-android;net7.0-ios;net7.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net7.0-windows10.0.19041.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
@@ -20,11 +24,4 @@
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net7.0-ios|AnyCPU'">
 	  <CreatePackage>false</CreatePackage>
 	</PropertyGroup>
-
-	<ItemGroup>
-	  <None Remove="examples\**\*" />
-	  <Content Remove="examples\**\*" />
-	  <Compile Remove="examples\**\*" />
-	  <MauiXaml Remove="examples\**\*" />
-	</ItemGroup>
 </Project>

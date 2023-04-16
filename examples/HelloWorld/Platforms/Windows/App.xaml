@@ -1,9 +1,9 @@
 ﻿<maui:MauiWinUIApplication
-    x:Class="HelloWorldApp.WinUI.App"
+    x:Class="HelloWorld.WinUI.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:maui="using:Microsoft.Maui"
-    xmlns:local="using:HelloWorldApp.WinUI">
+    xmlns:local="using:HelloWorld.WinUI">
 
 </maui:MauiWinUIApplication>
 

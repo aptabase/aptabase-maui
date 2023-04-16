@@ -1,4 +1,4 @@
-﻿namespace HelloWorldApp;
+﻿namespace HelloWorld;
 
 public partial class App : Application
 {

@@ -1,7 +1,7 @@
 ﻿using ObjCRuntime;
 using UIKit;
 
-namespace HelloWorldApp;
+namespace HelloWorld;
 
 public class Program
 {
