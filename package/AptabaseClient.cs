@@ -3,12 +3,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Aptabase.Maui;
 
+/// <summary>
+/// Aptabase client used for tracking events
+/// </summary>
 public interface IAptabaseClient
 {
 	void TrackEvent(string eventName);
 	void TrackEvent(string eventName, Dictionary<string, object> props);
 }
 
+/// <summary>
+/// Aptabase client used for tracking events
+/// </summary>
 public class AptabaseClient : IAptabaseClient
 {
     private static TimeSpan SESSION_TIMEOUT = TimeSpan.FromMinutes(60);
@@ -26,6 +32,11 @@ public class AptabaseClient : IAptabaseClient
         { "DEV", "http://localhost:5251" },
     };
 
+    /// <summary>
+    /// Initializes a new Aptabase Client
+    /// </summary>
+    /// <param name="appKey">The App Key.</param>
+    /// <param name="logger">A logger instance.</param>
     public AptabaseClient(string appKey, ILogger<AptabaseClient> logger)
 	{
         _logger = logger;
@@ -45,11 +56,20 @@ public class AptabaseClient : IAptabaseClient
 		_http.DefaultRequestHeaders.Add("App-Key", appKey);
     }
 
+    /// <summary>
+    /// Sends a telemetry event to Aptabase
+    /// </summary>
+    /// <param name="eventName">The event name.</param>
     public void TrackEvent(string eventName)
     {
 		this.TrackEvent(eventName, null);
     }
 
+    /// <summary>
+    /// Sends a telemetry event to Aptabase
+    /// </summary>
+    /// <param name="eventName">The event name.</param>
+    /// <param name="props">A list of key/value pairs.</param>
     public void TrackEvent(string eventName, Dictionary<string, object> props)
     {
         Task.Run(() => SendEvent(eventName, props));

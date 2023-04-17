@@ -3,8 +3,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Maui.Hosting;
 
+/// <summary>
+/// Aptabase extensions for <see cref="MauiAppBuilder"/>.
+/// </summary>
 public static class AptabaseExtensions
 {
+    /// <summary>
+    /// Uses Aptabase integration.
+    /// </summary>
+    /// <param name="builder">The builder.</param>
+    /// <param name="appKey">The App Key.</param>
+    /// <returns>The <paramref name="builder"/>.</returns>
     public static MauiAppBuilder UseAptabase(this MauiAppBuilder builder, string appKey)
     {
         builder.Services.AddSingleton<IAptabaseClient>(x =>
