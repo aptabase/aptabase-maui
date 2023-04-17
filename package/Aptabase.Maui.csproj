@@ -3,9 +3,16 @@
 	<PropertyGroup>
 		<PackageId>Aptabase.Maui</PackageId>
 		<Version>0.0.1</Version>
-		<Description>Official MAUI integration for Sentry - Open-source error tracking that helps developers monitor and fix crashes in real time.</Description>
-		<Authors>Guilherme Oenning</Authors>
-		<Company>Sumbit Labs Ltd</Company>
+		<Description>Maui SDK for Aptabase: Privacy-first and simple analytics for apps</Description>
+		<Authors>Aptabase Team</Authors>
+		<Company>Sumbit Labs Ltd.</Company>
+		<PackageProjectUrl>https://aptabase.com</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>logo.png</PackageIcon>
+		<RepositoryUrl>https://github.com/aptabase/aptabase-maui</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>analytics, privacy, maui</PackageTags>
+    	<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<TargetFrameworks>net7.0;net7.0-android;net7.0-ios;net7.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net7.0-windows10.0.19041.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
@@ -23,6 +30,11 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net7.0-ios|AnyCPU'">
-	  <CreatePackage>false</CreatePackage>
+		<CreatePackage>false</CreatePackage>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\"/>
+		<None Include="..\etc\logo.png" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 </Project>
