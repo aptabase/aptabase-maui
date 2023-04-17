@@ -2,7 +2,8 @@
 
 	<PropertyGroup>
 		<PackageId>Aptabase.Maui</PackageId>
-		<Version>0.0.1</Version>
+		<Version>0.0.2</Version>
+		<TargetFrameworks>net7.0;net7.0-android;net7.0-ios;net7.0-maccatalyst</TargetFrameworks>
 		<Description>Maui SDK for Aptabase: Privacy-first and simple analytics for apps</Description>
 		<Authors>Aptabase Team</Authors>
 		<Company>Sumbit Labs Ltd.</Company>
@@ -11,9 +12,10 @@
 		<PackageIcon>logo.png</PackageIcon>
 		<RepositoryUrl>https://github.com/aptabase/aptabase-maui</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<PackageTags>analytics, privacy, maui</PackageTags>
+		<PackageTags>analytics, privacy, maui, sdk, telemetry</PackageTags>
     	<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<TargetFrameworks>net7.0;net7.0-android;net7.0-ios;net7.0-maccatalyst</TargetFrameworks>
+		<IncludeSymbols>true</IncludeSymbols>
+    	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net7.0-windows10.0.19041.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net7.0-tizen</TargetFrameworks> -->
