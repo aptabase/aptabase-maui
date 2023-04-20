@@ -27,9 +27,9 @@ public class AptabaseClient : IAptabaseClient
 
     private static Dictionary<string, string> _regions = new()
     {
-        { "US", "https://api-us.aptabase.com" },
-        { "EU", "https://api-eu.aptabase.com" },
-        { "DEV", "http://localhost:5251" },
+        { "US", "https://us.aptabase.com" },
+        { "EU", "https://eu.aptabase.com" },
+        { "DEV", "http://localhost:3000" },
     };
 
     /// <summary>
@@ -105,7 +105,7 @@ public class AptabaseClient : IAptabaseClient
                 props
             });
 
-			var response = await _http.PostAsync("/v0/event", body);
+			var response = await _http.PostAsync("/api/v0/event", body);
             if (!response.IsSuccessStatusCode)
             {
                 var responseBody = await response.Content.ReadAsStringAsync();

@@ -2,14 +2,14 @@
 
 # MAUI SDK for Aptabase
 
-Instrument your apps with Aptabase, a privacy-first analytics platform for desktop, mobile and web apps.
+Instrument your apps with Aptabase, an Open Source, Privacy-First and Simple Analytics for Mobile, Desktop and Web Apps.
 
 ## Install
 
 Start by adding the Aptabase NuGet package to your .csproj:
 
 ```xml
-<PackageReference Include="Aptabase.Maui" Version="0.0.2" />
+<PackageReference Include="Aptabase.Maui" Version="0.0.3" />
 ```
 
 ## Usage
