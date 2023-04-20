@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<PackageId>Aptabase.Maui</PackageId>
-		<Version>0.0.3</Version>
+		<Version>0.0.4</Version>
 		<TargetFrameworks>net7.0;net7.0-android;net7.0-ios;net7.0-maccatalyst</TargetFrameworks>
 		<Description>Maui SDK for Aptabase: Open Source, Privacy-First and Simple Analytics for Mobile, Desktop and Web Apps</Description>
 		<Authors>Aptabase Team</Authors>
