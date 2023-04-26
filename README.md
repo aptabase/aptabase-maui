@@ -1,4 +1,4 @@
-![Aptabase](https://raw.githubusercontent.com/aptabase/aptabase/main/og.png)
+![Aptabase](https://raw.githubusercontent.com/aptabase/aptabase-com/main/public/og.png)
 
 # MAUI SDK for Aptabase
 
