@@ -14,12 +14,12 @@ public static class AptabaseExtensions
     /// <param name="builder">The builder.</param>
     /// <param name="appKey">The App Key.</param>
     /// <returns>The <paramref name="builder"/>.</returns>
-    public static MauiAppBuilder UseAptabase(this MauiAppBuilder builder, string appKey)
+    public static MauiAppBuilder UseAptabase(this MauiAppBuilder builder, string appKey, InitOptions? options = null)
     {
         builder.Services.AddSingleton<IAptabaseClient>(x =>
         {
             var logger = x.GetService<ILogger<AptabaseClient>>();
-            return new AptabaseClient(appKey, logger);
+            return new AptabaseClient(appKey, options, logger);
         });
 
         return builder;

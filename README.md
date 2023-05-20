@@ -9,7 +9,7 @@ Instrument your apps with Aptabase, an Open Source, Privacy-First and Simple Ana
 Start by adding the Aptabase NuGet package to your .csproj:
 
 ```xml
-<PackageReference Include="Aptabase.Maui" Version="0.0.3" />
+<PackageReference Include="Aptabase.Maui" Version="0.0.4" />
 ```
 
 ## Usage
