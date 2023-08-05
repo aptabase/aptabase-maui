@@ -2,7 +2,7 @@
 
 # MAUI SDK for Aptabase
 
-Instrument your apps with Aptabase, an Open Source, Privacy-First and Simple Analytics for Mobile, Desktop and Web Apps.
+Instrument your apps with Aptabase, an Open Source, Privacy-First and, Simple Analytics for Mobile, Desktop and, Web Apps.
 
 ## Install
 
@@ -14,7 +14,7 @@ Start by adding the Aptabase NuGet package to your .csproj:
 
 ## Usage
 
-First you need to get your `App Key` from Aptabase, you can find it in the `Instructions` menu on the left side menu.
+First, you need to get your `App Key` from Aptabase, you can find it in the `Instructions` menu on the left side menu.
 
 Change your `MauiProgram.cs` to add Aptabase to the build pipeline:
 
@@ -63,9 +63,9 @@ public partial class MainPage : ContentPage
 The `TrackEvent` method also supports custom properties:
 
 ```csharp
-_aptabase.TrackEvent("connect_click"); // An event with no properties
-_aptabase.TrackEvent("play_music", new() {  // An event with a custom property
-    { "name", "Here comes the sun" }
+_aptabase.TrackEvent("app_started"); // An event with no properties
+_aptabase.TrackEvent("screen_view", new() {  // An event with a custom property
+    { "name", Settings" }
 });
 ```
 
@@ -74,5 +74,5 @@ A few important notes:
 1. The SDK will automatically enhance the event with some useful information, like the OS, the app version, and other things.
 2. You're in control of what gets sent to Aptabase. This SDK does not automatically track any events, you need to call `TrackEvent` manually.
    - Because of this, it's generally recommended to at least track an event at startup
-3. The `TrackEvent` function is a non-blocking operation as it runs on the background.
+3. The `TrackEvent` function is a non-blocking operation as it runs in the background.
 4. Only strings and numbers values are allowed on custom properties
