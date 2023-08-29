@@ -1,4 +1,6 @@
-﻿using System.Net.Http.Json;
+﻿using System.Diagnostics;
+using System.Net.Http.Json;
+using System.Reflection;
 using Microsoft.Extensions.Logging;
 
 namespace Aptabase.Maui;
@@ -18,7 +20,7 @@ public interface IAptabaseClient
 public class AptabaseClient : IAptabaseClient
 {
     private static TimeSpan SESSION_TIMEOUT = TimeSpan.FromMinutes(60);
-    private static SystemInfo _sysInfo = new();
+    private static SystemInfo _sysInfo = new(Assembly.GetEntryAssembly());
 
     private readonly ILogger<AptabaseClient>? _logger;
     private readonly HttpClient? _http;

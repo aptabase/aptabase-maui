@@ -6,7 +6,6 @@
 /// </summary>
 public class InitOptions
 {
-
 	/// <summary>
 	/// Custom host for Self-Hosted instances
 	/// </summary>

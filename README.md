@@ -9,7 +9,7 @@ Instrument your apps with Aptabase, an Open Source, Privacy-First and, Simple An
 Start by adding the Aptabase NuGet package to your .csproj:
 
 ```xml
-<PackageReference Include="Aptabase.Maui" Version="0.0.6" />
+<PackageReference Include="Aptabase.Maui" Version="0.0.7" />
 ```
 
 ## Usage
@@ -31,7 +31,13 @@ public static MauiApp CreateMauiApp()
 
 The `UseAptabase` method will add the `IAptabaseClient` to your dependency injection container, allowing you to use it in your pages and view models.
 
-As an example, you can add the following code to your `MainPage.xaml.cs`:
+As an example, to track events in your `MainPage`, you first need to add it to the DI Container in `MauiProgram.cs`:
+
+```csharp
+builder.Services.AddSingleton<MainPage>();
+```         
+
+And then inject and use it on your `MainPage.xaml.cs`:
 
 ```csharp
 public partial class MainPage : ContentPage
