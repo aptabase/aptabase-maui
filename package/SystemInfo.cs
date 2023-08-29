@@ -7,7 +7,7 @@ internal class SystemInfo
     private static string _pkgVersion = typeof(AptabaseClient).Assembly
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
 
-    public bool IsDebug { get; }
+    public bool IsDebug { get; private set; }
     public string OsName { get; }
 	public string OsVersion { get; }
 	public string SdkVersion { get; }
@@ -17,7 +17,8 @@ internal class SystemInfo
 
     public SystemInfo()
 	{
-        this.IsDebug = GetIsDebug();
+        this.MaybeSetDebugMode();
+
         this.OsName = GetOsName();
         this.OsVersion = GetOsVersion();
         this.SdkVersion = $"Aptabase.Maui@{_pkgVersion}";
@@ -26,13 +27,10 @@ internal class SystemInfo
         this.AppBuildNumber = AppInfo.Current.BuildString;
     }
 
-    private bool GetIsDebug()
+    [Conditional("DEBUG")]
+    public void MaybeSetDebugMode()
     {
-#if DEBUG
-        return true;
-#else
-        return false;
-#endif
+        this.IsDebug = true;
     }
 
     private string GetOsName()
