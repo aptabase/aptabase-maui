@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 
@@ -19,15 +18,16 @@ public interface IAptabaseClient
 /// </summary>
 public class AptabaseClient : IAptabaseClient
 {
-    private static TimeSpan SESSION_TIMEOUT = TimeSpan.FromMinutes(60);
-    private static SystemInfo _sysInfo = new(Assembly.GetEntryAssembly());
+    private static readonly Random _random = new();
+    private static readonly SystemInfo _sysInfo = new(Assembly.GetEntryAssembly());
+    private static readonly TimeSpan SESSION_TIMEOUT = TimeSpan.FromMinutes(60);
 
     private readonly ILogger<AptabaseClient>? _logger;
     private readonly HttpClient? _http;
     private DateTime _lastTouched = DateTime.UtcNow;
     private string _sessionId = NewSessionId();
 
-    private static Dictionary<string, string> _hosts = new()
+    private static readonly Dictionary<string, string> _hosts = new()
     {
         { "US", "https://us.aptabase.com" },
         { "EU", "https://eu.aptabase.com" },
@@ -141,6 +141,11 @@ public class AptabaseClient : IAptabaseClient
         }
     }
 
-    private static string NewSessionId() => Guid.NewGuid().ToString().ToLower();
+    public static string NewSessionId()
+    {
+        var epochInSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var random = _random.NextInt64(0, 99999999);
+        return (epochInSeconds * 100000000 + random).ToString();
+    }
 }
 

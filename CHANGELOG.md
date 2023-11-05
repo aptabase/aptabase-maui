@@ -1,3 +1,7 @@
+## 0.0.8
+
+* Use new session id format
+
 ## 0.0.7
 
 * Use a more reliable method for Debug/Release mode detection
