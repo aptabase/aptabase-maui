@@ -10,4 +10,10 @@ public class InitOptions
 	/// Custom host for Self-Hosted instances
 	/// </summary>
 	public string? Host { get; set; }
+
+	/// <summary>
+	/// Manual overide to make the client run in debug mode
+	/// </summary>
+	public bool IsDebug { get; set; }
+
 }

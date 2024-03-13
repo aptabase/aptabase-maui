@@ -26,6 +26,7 @@ public class AptabaseClient : IAptabaseClient
     private readonly HttpClient? _http;
     private DateTime _lastTouched = DateTime.UtcNow;
     private string _sessionId = NewSessionId();
+    private bool IsDebug = false;
 
     private static readonly Dictionary<string, string> _hosts = new()
     {
@@ -44,7 +45,7 @@ public class AptabaseClient : IAptabaseClient
     public AptabaseClient(string appKey, InitOptions? options, ILogger<AptabaseClient>? logger)
     {
         _logger = logger;
-
+        IsDebug = options?.IsDebug == true;
         var parts = appKey.Split("-");
         if (parts.Length != 3 || !_hosts.ContainsKey(parts[1]))
         {
@@ -117,7 +118,7 @@ public class AptabaseClient : IAptabaseClient
                 eventName,
                 systemProps = new
                 {
-                    isDebug = _sysInfo.IsDebug,
+                    isDebug = _sysInfo.IsDebug || IsDebug,
                     osName = _sysInfo.OsName,
                     osVersion = _sysInfo.OsVersion,
                     locale = _sysInfo.Locale,
@@ -148,4 +149,3 @@ public class AptabaseClient : IAptabaseClient
         return (epochInSeconds * 100000000 + random).ToString();
     }
 }
-
