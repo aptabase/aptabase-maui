@@ -4,7 +4,7 @@ namespace HelloWorld;
 
 public partial class MainPage : ContentPage
 {
-	IAptabaseClient _aptabase;
+    private readonly IAptabaseClient _aptabase;
     int count = 0;
 
 	public MainPage(IAptabaseClient aptabase)
@@ -26,5 +26,3 @@ public partial class MainPage : ContentPage
 		SemanticScreenReader.Announce(CounterBtn.Text);
 	}
 }
-
-

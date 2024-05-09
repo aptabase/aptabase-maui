@@ -1,30 +1,31 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Serialization;
 
 namespace Aptabase.Maui;
 
 internal class SystemInfo
 {
-    private static string _pkgVersion = typeof(AptabaseClient).Assembly
-        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    private static readonly string _pkgVersion = typeof(AptabaseClient).Assembly
+        .GetCustomAttribute<AssemblyFileVersionAttribute>()!.Version;
 
     public bool IsDebug { get; }
     public string OsName { get; }
-	public string OsVersion { get; }
-	public string SdkVersion { get; }
+    public string OsVersion { get; }
+    public string SdkVersion { get; }
     public string Locale { get; }
     public string AppVersion { get; }
     public string AppBuildNumber { get; }
 
     public SystemInfo(Assembly? assembly)
 	{
-        this.IsDebug = IsInDebugMode(assembly);
-        this.OsName = GetOsName();
-        this.OsVersion = GetOsVersion();
-        this.SdkVersion = $"Aptabase.Maui@{_pkgVersion}";
-        this.Locale = Thread.CurrentThread.CurrentCulture.Name;
-        this.AppVersion = AppInfo.Current.VersionString;
-        this.AppBuildNumber = AppInfo.Current.BuildString;
+        IsDebug = IsInDebugMode(assembly);
+        OsName = GetOsName();
+        OsVersion = GetOsVersion();
+        SdkVersion = $"Aptabase.Maui@{_pkgVersion}";
+        Locale = Thread.CurrentThread.CurrentCulture.Name;
+        AppVersion = AppInfo.Current.VersionString;
+        AppBuildNumber = AppInfo.Current.BuildString;
     }
         
     private static bool IsInDebugMode(Assembly? assembly)
@@ -35,8 +36,7 @@ internal class SystemInfo
         var attributes = assembly.GetCustomAttributes(typeof(DebuggableAttribute), false);
         if (attributes.Length > 0)
         {
-            var debuggable = attributes[0] as DebuggableAttribute;
-            if (debuggable != null)
+            if (attributes[0] is DebuggableAttribute debuggable)
                 return (debuggable.DebuggingFlags & DebuggableAttribute.DebuggingModes.Default) == DebuggableAttribute.DebuggingModes.Default;
             else
                 return false;
@@ -45,7 +45,7 @@ internal class SystemInfo
             return false;
     }
 
-    private string GetOsName()
+    private static string GetOsName()
 	{
 		var platform = DeviceInfo.Current.Platform;
 		if (platform == DevicePlatform.Android)
@@ -77,7 +77,7 @@ internal class SystemInfo
         return "";
     }
 
-    private string GetOsVersion()
+    private static string GetOsVersion()
     {
 #if MACCATALYST
         var osVersion = Foundation.NSProcessInfo.ProcessInfo.OperatingSystemVersion;
