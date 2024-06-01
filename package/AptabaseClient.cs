@@ -1,6 +1,7 @@
-﻿using System.Net.Http.Json;
+﻿using Microsoft.Extensions.Logging;
+using System.Net.Http.Json;
 using System.Reflection;
-using Microsoft.Extensions.Logging;
+using System.Threading.Channels;
 
 namespace Aptabase.Maui;
 
@@ -9,23 +10,25 @@ namespace Aptabase.Maui;
 /// </summary>
 public interface IAptabaseClient
 {
-	void TrackEvent(string eventName);
-	void TrackEvent(string eventName, Dictionary<string, object> props);
+	void TrackEvent(string eventName, Dictionary<string, object>? props = null);
 }
 
 /// <summary>
 /// Aptabase client used for tracking events
 /// </summary>
-public class AptabaseClient : IAptabaseClient
+public class AptabaseClient : IAptabaseClient, IAsyncDisposable
 {
     private static readonly Random _random = new();
-    private static readonly SystemInfo _sysInfo = new(Assembly.GetEntryAssembly());
+    private static readonly SystemInfo _sysInfo = new(Assembly.GetExecutingAssembly());
     private static readonly TimeSpan SESSION_TIMEOUT = TimeSpan.FromMinutes(60);
 
     private readonly ILogger<AptabaseClient>? _logger;
     private readonly HttpClient? _http;
     private DateTime _lastTouched = DateTime.UtcNow;
     private string _sessionId = NewSessionId();
+
+    private readonly Channel<EventData>? _channel;
+    private readonly Task? _processingTask;
 
     private static readonly Dictionary<string, string> _hosts = new()
     {
@@ -41,7 +44,7 @@ public class AptabaseClient : IAptabaseClient
     /// <param name="appKey">The App Key.</param>
     /// <param name="options">Initialization Options.</param>
     /// <param name="logger">A logger instance.</param>
-    public AptabaseClient(string appKey, InitOptions? options, ILogger<AptabaseClient>? logger)
+    public AptabaseClient(string appKey, AptabaseOptions? options, ILogger<AptabaseClient>? logger)
     {
         _logger = logger;
 
@@ -54,37 +57,20 @@ public class AptabaseClient : IAptabaseClient
 
         var baseUrl = GetBaseUrl(parts[1], options);
         if (baseUrl is null)
-            return;
-
-        _http = new();
-        _http.BaseAddress = new Uri(baseUrl);
-		_http.DefaultRequestHeaders.Add("App-Key", appKey);
-    }
-
-    private string? GetBaseUrl(string region, InitOptions? options)
-    {
-        if (region == "SH")
         {
-            if (string.IsNullOrEmpty(options?.Host))
-            {
-                _logger?.LogWarning("Host parameter must be defined when using Self-Hosted App Key. Tracking will be disabled.");
-                return null;
-            }
-
-            return options.Host;
+            return;
         }
 
-        return _hosts[region];
-    }
+        _http = new()
+        {
+            BaseAddress = new Uri(baseUrl)
+        };
 
+        _http.DefaultRequestHeaders.Add("App-Key", appKey);
 
-    /// <summary>
-    /// Sends a telemetry event to Aptabase
-    /// </summary>
-    /// <param name="eventName">The event name.</param>
-    public void TrackEvent(string eventName)
-    {
-		this.TrackEvent(eventName, null);
+        _channel = Channel.CreateUnbounded<EventData>();
+
+        _processingTask = Task.Run(ProcessEventsAsync);
     }
 
     /// <summary>
@@ -92,46 +78,62 @@ public class AptabaseClient : IAptabaseClient
     /// </summary>
     /// <param name="eventName">The event name.</param>
     /// <param name="props">A list of key/value pairs.</param>
-    public void TrackEvent(string eventName, Dictionary<string, object>? props)
+    public void TrackEvent(string eventName, Dictionary<string, object>? props = null)
     {
-        Task.Run(() => SendEvent(eventName, props));
+        if (_channel is null)
+        {
+            return;
+        }
+
+        if (!_channel.Writer.TryWrite(new EventData(eventName, props)))
+        {
+            _logger?.LogError("Failed to perform TrackEvent");
+        }
     }
 
-    private async Task SendEvent(string eventName, Dictionary<string, object>? props)
+    private async ValueTask ProcessEventsAsync()
     {
-        if (_http is null) return;
+        if (_channel is null)
+        {
+            return;
+        }
+
+        while (await _channel.Reader.WaitToReadAsync())
+        {
+            RefreshSession();
+
+            while (_channel.Reader.TryRead(out EventData? eventData))
+            {
+                await SendEventAsync(eventData);
+            }
+        }
+    }
+
+    private async Task SendEventAsync(EventData? eventData)
+    {
+        if (eventData is null)
+        {
+            return;
+        }
+
+        if (_http is null)
+        {
+            return;
+        }
 
         try
         {
-            var now = DateTime.UtcNow;
-            var timeSince = now.Subtract(_lastTouched);
-            if (timeSince >= SESSION_TIMEOUT)
-                _sessionId = NewSessionId();
+            eventData.SessionId = _sessionId;
+            eventData.SystemProps = _sysInfo;
 
-            _lastTouched = now;
+            var body = JsonContent.Create(eventData);
 
-            var body = JsonContent.Create(new
-            {
-                timestamp = DateTime.UtcNow.ToString("o"),
-                sessionId = _sessionId,
-                eventName,
-                systemProps = new
-                {
-                    isDebug = _sysInfo.IsDebug,
-                    osName = _sysInfo.OsName,
-                    osVersion = _sysInfo.OsVersion,
-                    locale = _sysInfo.Locale,
-                    appVersion = _sysInfo.AppVersion,
-                    appBuildNumber = _sysInfo.AppBuildNumber,
-                    sdkVersion = _sysInfo.SdkVersion,
-                },
-                props
-            });
+            var response = await _http.PostAsync("/api/v0/event", body);
 
-			var response = await _http.PostAsync("/api/v0/event", body);
             if (!response.IsSuccessStatusCode)
             {
                 var responseBody = await response.Content.ReadAsStringAsync();
+
                 _logger?.LogError("Failed to perform TrackEvent due to {StatusCode} and response body {Body}", response.StatusCode, responseBody);
             }
         }
@@ -141,11 +143,55 @@ public class AptabaseClient : IAptabaseClient
         }
     }
 
-    public static string NewSessionId()
+    private void RefreshSession()
+    {
+        var now = DateTime.UtcNow;
+        var timeSince = now.Subtract(_lastTouched);
+
+        if (timeSince >= SESSION_TIMEOUT)
+        {
+            _sessionId = NewSessionId();
+        }
+
+        _lastTouched = now;
+    }
+
+    private static string NewSessionId()
     {
         var epochInSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var random = _random.NextInt64(0, 99999999);
+
         return (epochInSeconds * 100000000 + random).ToString();
     }
-}
 
+    private string? GetBaseUrl(string region, AptabaseOptions? options)
+    {
+        if (region == "SH")
+        {
+            if (string.IsNullOrEmpty(options?.Host))
+            {
+                _logger?.LogWarning("Host parameter must be defined when using Self-Hosted App Key. Tracking will be disabled.");
+                
+                return null;
+            }
+
+            return options.Host;
+        }
+
+        return _hosts[region];
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _channel?.Writer.Complete();
+
+        if (_processingTask?.IsCompleted == false)
+        {
+            await _processingTask;
+        }
+
+        _http?.Dispose();  
+
+        GC.SuppressFinalize(this);
+    }
+}

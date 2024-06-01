@@ -16,7 +16,7 @@ public static class AptabaseExtensions
     /// <param name="builder">The builder.</param>
     /// <param name="appKey">The App Key.</param>
     /// <returns>The <paramref name="builder"/>.</returns>
-    public static MauiAppBuilder UseAptabase(this MauiAppBuilder builder, string appKey, InitOptions? options = null)
+    public static MauiAppBuilder UseAptabase(this MauiAppBuilder builder, string appKey, AptabaseOptions? options = null)
     {
         builder.Services.AddSingleton<IAptabaseClient>(x =>
         {

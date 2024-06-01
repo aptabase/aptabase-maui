@@ -71,7 +71,7 @@ The `TrackEvent` method also supports custom properties:
 ```csharp
 _aptabase.TrackEvent("app_started"); // An event with no properties
 _aptabase.TrackEvent("screen_view", new() {  // An event with a custom property
-    { "name", Settings" }
+    { "name", "Settings" }
 });
 ```
 
