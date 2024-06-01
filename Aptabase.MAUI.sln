@@ -3,9 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33530.505
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aptabase.Maui", "package\Aptabase.Maui.csproj", "{CDBA84BA-F326-4162-B509-31892E9CAF2E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aptabase.Maui", "src\Aptabase.Maui.csproj", "{CDBA84BA-F326-4162-B509-31892E9CAF2E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloWorld", "examples\HelloWorld\HelloWorld.csproj", "{E9D22AE5-0B04-4ED6-B1BC-4242BE3D321E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloWorld", "test\HelloWorld\HelloWorld.csproj", "{E9D22AE5-0B04-4ED6-B1BC-4242BE3D321E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8BFFEF39-1EA0-4D6D-9988-322A74A6558D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{19E5FDF2-25B6-48AA-BB1B-8BBA9E8323E1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +29,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CDBA84BA-F326-4162-B509-31892E9CAF2E} = {8BFFEF39-1EA0-4D6D-9988-322A74A6558D}
+		{E9D22AE5-0B04-4ED6-B1BC-4242BE3D321E} = {19E5FDF2-25B6-48AA-BB1B-8BBA9E8323E1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C696E39C-8A3B-4FE3-BBB1-95FE24E67DCD}
