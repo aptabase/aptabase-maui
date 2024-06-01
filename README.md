@@ -2,6 +2,9 @@
 
 # MAUI SDK for Aptabase
 
+[![NuGet](https://img.shields.io/nuget/v/Aptabase.Maui)](https://www.nuget.org/packages/Aptabase.Maui) 
+[![GitHub](https://img.shields.io/github/license/aptabase/aptabase-maui)](https://github.com/aptabase/aptabase-maui/blob/main/LICENSE)
+
 Instrument your apps with Aptabase, an Open Source, Privacy-First and, Simple Analytics for Mobile, Desktop and, Web Apps.
 
 ## Install
@@ -9,7 +12,7 @@ Instrument your apps with Aptabase, an Open Source, Privacy-First and, Simple An
 Start by adding the Aptabase NuGet package to your .csproj:
 
 ```xml
-<PackageReference Include="Aptabase.Maui" Version="0.0.7" />
+<PackageReference Include="Aptabase.Maui" Version="0.0.9" />
 ```
 
 ## Usage
@@ -24,7 +27,14 @@ public static MauiApp CreateMauiApp()
     var builder = MauiApp.CreateBuilder();
     builder
         .UseMauiApp<App>()
-        .UseAptabase("<YOUR_APP_KEY>") // 👈 this is where you enter your App Key
+        .UseAptabase("<YOUR_APP_KEY>", new AptabaseOptions // 👈 this is where you enter your App Key
+        {
+#if DEBUG
+            IsDebugMode = true,
+#else
+            IsDebugMode = false,
+#endif
+        })
     ...
 }
 ```
