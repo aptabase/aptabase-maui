@@ -11,6 +11,7 @@ internal class SystemInfo
     public bool IsDebug { get; set; }
     public string OsName { get; }
     public string OsVersion { get; }
+    public string DeviceModel { get; }
     public string SdkVersion { get; }
     public string Locale { get; }
     public string AppVersion { get; }
@@ -20,6 +21,7 @@ internal class SystemInfo
 	{
         OsName = GetOsName();
         OsVersion = GetOsVersion();
+        DeviceModel = DeviceInfo.Current.Model;
         SdkVersion = $"Aptabase.Maui@{_pkgVersion}";
         Locale = Thread.CurrentThread.CurrentCulture.Name;
         AppVersion = AppInfo.Current.VersionString;
