@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Aptabase.Maui;
 
 namespace HelloWorld;
 
@@ -9,7 +10,14 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
-            .UseAptabase("A-DEV-0000000000")
+            .UseAptabase("A-DEV-0000000000", new AptabaseOptions
+			{
+#if DEBUG
+				IsDebugMode = true,
+#else
+				IsDebugMode = false,
+#endif
+			})
             .ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

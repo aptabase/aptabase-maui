@@ -19,7 +19,7 @@ public interface IAptabaseClient
 public class AptabaseClient : IAptabaseClient, IAsyncDisposable
 {
     private static readonly Random _random = new();
-    private static readonly SystemInfo _sysInfo = new(Assembly.GetExecutingAssembly());
+    private static readonly SystemInfo _sysInfo = new();
     private static readonly TimeSpan SESSION_TIMEOUT = TimeSpan.FromMinutes(60);
 
     private readonly ILogger<AptabaseClient>? _logger;
@@ -60,6 +60,8 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
         {
             return;
         }
+
+        _sysInfo.IsDebug = options?.IsDebugMode ?? SystemInfo.IsInDebugMode(Assembly.GetExecutingAssembly());
 
         _http = new()
         {

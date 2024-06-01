@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
-using System.Text.Json.Serialization;
 
 namespace Aptabase.Maui;
 
@@ -9,7 +8,7 @@ internal class SystemInfo
     private static readonly string _pkgVersion = typeof(AptabaseClient).Assembly
         .GetCustomAttribute<AssemblyFileVersionAttribute>()!.Version;
 
-    public bool IsDebug { get; }
+    public bool IsDebug { get; set; }
     public string OsName { get; }
     public string OsVersion { get; }
     public string SdkVersion { get; }
@@ -17,9 +16,8 @@ internal class SystemInfo
     public string AppVersion { get; }
     public string AppBuildNumber { get; }
 
-    public SystemInfo(Assembly? assembly)
+    public SystemInfo()
 	{
-        IsDebug = IsInDebugMode(assembly);
         OsName = GetOsName();
         OsVersion = GetOsVersion();
         SdkVersion = $"Aptabase.Maui@{_pkgVersion}";
@@ -28,7 +26,7 @@ internal class SystemInfo
         AppBuildNumber = AppInfo.Current.BuildString;
     }
         
-    private static bool IsInDebugMode(Assembly? assembly)
+    internal static bool IsInDebugMode(Assembly? assembly)
     {
         if (assembly == null)
             return false;
