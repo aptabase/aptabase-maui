@@ -1,7 +1,5 @@
 ﻿using Aptabase.Maui;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
-using System.Reflection;
 
 namespace Microsoft.Maui.Hosting;
 

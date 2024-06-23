@@ -10,7 +10,7 @@ namespace Aptabase.Maui;
 /// </summary>
 public interface IAptabaseClient
 {
-	void TrackEvent(string eventName, Dictionary<string, object>? props = null);
+    void TrackEvent(string eventName, Dictionary<string, object>? props = null);
 }
 
 /// <summary>
@@ -34,7 +34,7 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
     {
         { "US", "https://us.aptabase.com" },
         { "EU", "https://eu.aptabase.com" },
-        { "DEV", "http://localhost:3000" },
+        { "DEV",  DeviceInfo.Platform == DevicePlatform.Android ? "https://10.0.2.2:3000" : "https://localhost:3000" },
         { "SH", "" },
     };
 
@@ -49,13 +49,17 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
         _logger = logger;
 
         var parts = appKey.Split("-");
+
         if (parts.Length != 3 || !_hosts.ContainsKey(parts[1]))
         {
             _logger?.LogWarning("The Aptabase App Key {AppKey} is invalid. Tracking will be disabled.", appKey);
             return;
         }
 
+        var region = parts[1];
+
         var baseUrl = GetBaseUrl(parts[1], options);
+
         if (baseUrl is null)
         {
             return;
@@ -63,10 +67,8 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
 
         _sysInfo.IsDebug = options?.IsDebugMode ?? SystemInfo.IsInDebugMode(Assembly.GetExecutingAssembly());
 
-        _http = new()
-        {
-            BaseAddress = new Uri(baseUrl)
-        };
+        _http = region == "DEV" ? new(new LocalHttpsClientHandler()) : new();
+        _http.BaseAddress = new Uri(baseUrl);
 
         _http.DefaultRequestHeaders.Add("App-Key", appKey);
 
@@ -139,7 +141,7 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
                 _logger?.LogError("Failed to perform TrackEvent due to {StatusCode} and response body {Body}", response.StatusCode, responseBody);
             }
         }
-		catch (Exception ex)
+        catch (Exception ex)
         {
             _logger?.LogError(ex, "Failed to perform TrackEvent");
         }
@@ -173,7 +175,7 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
             if (string.IsNullOrEmpty(options?.Host))
             {
                 _logger?.LogWarning("Host parameter must be defined when using Self-Hosted App Key. Tracking will be disabled.");
-                
+
                 return null;
             }
 
@@ -192,7 +194,7 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
             await _processingTask;
         }
 
-        _http?.Dispose();  
+        _http?.Dispose();
 
         GC.SuppressFinalize(this);
     }

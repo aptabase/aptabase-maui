@@ -10,7 +10,7 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
-            .UseAptabase("A-DEV-0000000000", new AptabaseOptions
+            .UseAptabase("A-DEV-4957334021", new AptabaseOptions
 			{
 #if DEBUG
 				IsDebugMode = true,
