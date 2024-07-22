@@ -14,4 +14,9 @@ public class AptabaseOptions
     /// Indicates whether the client should operate in Debug mode. This setting is optional and helps in enabling debug-specific functionalities or logging.
     /// </summary>
     public bool? IsDebugMode { get; set; }
+
+    /// <summary>
+    /// Indicates whether the client should provide a reliable, persistent channel. This setting is optional and may be useful for crash reporting.
+    /// </summary>
+    public bool? IsPersistent { get; set; }
 }
