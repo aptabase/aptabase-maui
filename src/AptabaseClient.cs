@@ -5,6 +5,7 @@ using System.Threading.Channels;
 
 // https://dotnet.github.io/dotNext/features/threading/channel.html
 using DotNext.Threading.Channels;
+using System.Text;
 using System.Text.Json;
 using System.Net;
 
@@ -255,17 +256,31 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
         {
             try
             {
-                // NOTE must catch any deserialization failure or ReliableReader.MoveNextAsync() will never consume the event!
-                return await JsonSerializer.DeserializeAsync<EventData?>(input, cancellationToken: token) ?? throw new Exception();
+                return JsonSerializer.Deserialize(await ExtractJsonObject(input, token), typeof(EventData)) as EventData ?? throw new NullReferenceException();
             }
             catch
             {
-                return new EventData(_invalidPersistedEvent); // non-null, uniquely tagged event
+                // NOTE must not throw any deserialization failure or ReliableReader.MoveNextAsync() will never consume the event!
+                return new EventData(_invalidPersistedEvent);
             }
         }
 
-        protected override ValueTask SerializeAsync(EventData input, Stream output, CancellationToken token) =>
-            new (JsonSerializer.SerializeAsync(output, input, cancellationToken: token));
+        protected override ValueTask SerializeAsync(EventData input, Stream output, CancellationToken token)
+        {
+            JsonSerializer.Serialize(output, input);
+            output.WriteByte((byte)'\n');   // append jsonl/ndjson separator
+            output.Flush();
+            return new ValueTask();
+        }
+
+        private async static Task<string> ExtractJsonObject(Stream input, CancellationToken token)
+        {
+            StringBuilder sb = new();
+            byte[] b = new byte[1];
+            while (await input.ReadAsync(b, token) > 0 && b[0] != '\n')
+                sb.Append((char)b[0]);
+            return sb.ToString();
+        }
     }
 
     private async void TrackPersistentEvent(string eventName, Dictionary<string, object>? props = null)
