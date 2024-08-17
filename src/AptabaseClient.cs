@@ -3,6 +3,12 @@ using System.Net.Http.Json;
 using System.Reflection;
 using System.Threading.Channels;
 
+// https://dotnet.github.io/dotNext/features/threading/channel.html
+using DotNext.Threading.Channels;
+using System.Text;
+using System.Text.Json;
+using System.Net;
+
 namespace Aptabase.Maui;
 
 /// <summary>
@@ -72,9 +78,23 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
 
         _http.DefaultRequestHeaders.Add("App-Key", appKey);
 
-        _channel = Channel.CreateUnbounded<EventData>();
+        if (options?.IsPersistent == true)
+        {
+            _pchannel = new PersistentEventDataChannel(new PersistentChannelOptions()
+            {
+                SingleReader = true,
+                ReliableEnumeration = true,
+                Location = Path.Combine(FileSystem.CacheDirectory, "EventData"),
+            });
 
-        _processingTask = Task.Run(ProcessEventsAsync);
+            _processingTask = Task.Run(ProcessPersistentEventsAsync);
+        }
+        else
+        {
+            _channel = Channel.CreateUnbounded<EventData>();
+
+            _processingTask = Task.Run(ProcessEventsAsync);
+        }
     }
 
     /// <summary>
@@ -84,6 +104,12 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
     /// <param name="props">A list of key/value pairs.</param>
     public void TrackEvent(string eventName, Dictionary<string, object>? props = null)
     {
+        if (_pchannel is not null)
+        {
+            TrackPersistentEvent(eventName, props);
+            return;
+        }
+
         if (_channel is null)
         {
             return;
@@ -108,6 +134,12 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
 
             while (_channel.Reader.TryRead(out EventData? eventData))
             {
+                if (eventData is not null)
+                {
+                    eventData.SessionId = _sessionId;
+                    eventData.SystemProps = _sysInfo;
+                }
+
                 await SendEventAsync(eventData);
             }
         }
@@ -127,15 +159,17 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
 
         try
         {
-            eventData.SessionId = _sessionId;
-            eventData.SystemProps = _sysInfo;
-
             var body = JsonContent.Create(eventData);
 
             var response = await _http.PostAsync("/api/v0/event", body);
 
             if (!response.IsSuccessStatusCode)
             {
+                if (response.StatusCode >= HttpStatusCode.InternalServerError || response.StatusCode == HttpStatusCode.RequestTimeout)
+                {
+                    throw new TaskCanceledException($"Server returned {response.StatusCode}");
+                }
+
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 _logger?.LogError("Failed to perform TrackEvent due to {StatusCode} and response body {Body}", response.StatusCode, responseBody);
@@ -143,6 +177,10 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
         }
         catch (Exception ex)
         {
+            if (_pchannel is not null) // retryable (later)
+            {
+                throw;
+            }
             _logger?.LogError(ex, "Failed to perform TrackEvent");
         }
     }
@@ -188,6 +226,7 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _channel?.Writer.Complete();
+        _pchannel?.Writer.Complete();
 
         if (_processingTask?.IsCompleted == false)
         {
@@ -197,5 +236,115 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
         _http?.Dispose();
 
         GC.SuppressFinalize(this);
+    }
+
+    // Persistent event channel support
+
+    private static int _maxPersistedEvents = 1000;
+    private const string _invalidPersistedEvent = "%%%DELETE%%%";
+    private readonly PersistentEventDataChannel? _pchannel;
+
+    private sealed class PersistentEventDataChannel : PersistentChannel<EventData, EventData>
+    {
+        internal PersistentEventDataChannel(PersistentChannelOptions options) : base(options)
+        {
+            if (options?.PartitionCapacity > 0)
+                _maxPersistedEvents = options.PartitionCapacity;
+        }
+
+        protected override async ValueTask<EventData> DeserializeAsync(Stream input, CancellationToken token)
+        {
+            try
+            {
+                return JsonSerializer.Deserialize(await ExtractJsonObject(input, token), typeof(EventData)) as EventData ?? throw new NullReferenceException();
+            }
+            catch
+            {
+                // NOTE must not throw any deserialization failure or ReliableReader.MoveNextAsync() will never consume the event!
+                return new EventData(_invalidPersistedEvent);
+            }
+        }
+
+        protected override ValueTask SerializeAsync(EventData input, Stream output, CancellationToken token)
+        {
+            JsonSerializer.Serialize(output, input);
+            output.WriteByte((byte)'\n');   // append jsonl/ndjson separator
+            output.Flush();
+            return new ValueTask();
+        }
+
+        private async static Task<string> ExtractJsonObject(Stream input, CancellationToken token)
+        {
+            StringBuilder sb = new();
+            byte[] b = new byte[1];
+            while (await input.ReadAsync(b, token) > 0 && b[0] != '\n')
+                sb.Append((char)b[0]);
+            return sb.ToString();
+        }
+    }
+
+    private async void TrackPersistentEvent(string eventName, Dictionary<string, object>? props = null)
+    {
+        if (_pchannel is null)
+        {
+            return;
+        }
+
+        RefreshSession();
+
+        var eventData = new EventData(eventName, props) { SessionId = _sessionId, SystemProps = _sysInfo };
+
+        try
+        {
+            await _pchannel.Writer.WriteAsync(eventData);    // NOTE TryWrite not supported on PersistentChannelWriter
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to perform TrackEvent");
+        }
+    }
+
+    private async ValueTask ProcessPersistentEventsAsync()
+    {
+        if (_pchannel is null)
+        {
+            return;
+        }
+
+        if (_http is null)
+        {
+            return;
+        }
+
+        while (true)
+        {
+            try
+            {
+                await foreach (EventData eventData in _pchannel.Reader.ReadAllAsync())
+                {
+                    if (_pchannel.RemainingCount > _maxPersistedEvents)
+                    {
+                        _logger?.LogError("ProcessEvents flushed {Name}@{Timestamp}", eventData.EventName, eventData.Timestamp);
+                        continue;
+                    }
+                    if (eventData.EventName == _invalidPersistedEvent)
+                    {
+                        _logger?.LogError("ProcessEvents undecodable event");
+                        continue;
+                    }
+                    await SendEventAsync(eventData);
+                }
+            }
+            catch (ChannelClosedException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                // Wait an extra HttpClient timeout, default 100s
+                _logger?.LogInformation(ex, "ProcessEvents retrying in {Seconds}s", _http.Timeout.TotalSeconds);
+                await Task.Delay((int)_http.Timeout.TotalMilliseconds);
+            }
+        }
     }
 }
