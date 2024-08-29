@@ -95,6 +95,15 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
 
             _processingTask = Task.Run(ProcessEventsAsync);
         }
+
+        if (options?.IsSimpleCrashReporting == true)
+        {
+            if (options.IsPersistent != true)
+            {
+                _logger?.LogWarning("IsPersistent is not set on this Aptabase client, crash reporting will be best-effort only");
+            }
+            RegisterUncaughtExceptionHandler();
+        }
     }
 
     /// <summary>
@@ -322,6 +331,11 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
             {
                 await foreach (EventData eventData in _pchannel.Reader.ReadAllAsync())
                 {
+                    if (pauseProcessing)
+                    {
+                        pauseProcessing = false;
+                        throw new Exception("Paused");
+                    }
                     if (_pchannel.RemainingCount > _maxPersistedEvents)
                     {
                         _logger?.LogError("ProcessEvents flushed {Name}@{Timestamp}", eventData.EventName, eventData.Timestamp);
@@ -347,4 +361,73 @@ public class AptabaseClient : IAptabaseClient, IAsyncDisposable
             }
         }
     }
+
+    #region Simple crash reporting
+
+    private bool pauseProcessing;
+#if ANDROID
+    // the UnhandledExceptionRaiser fires first, but others may fire redundantly soon after
+    private bool _nativeThrown;
+#endif
+
+    private void RegisterUncaughtExceptionHandler()
+    {
+        AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+        {
+            TrackError((Exception) e.ExceptionObject, e.IsTerminating ? "Crash" : "Exception", DateTime.UtcNow, e.IsTerminating);
+        };
+
+        TaskScheduler.UnobservedTaskException += (sender, ueargs) =>
+        {
+            var stamp = DateTime.UtcNow;
+            foreach (var e in ueargs.Exception.InnerExceptions)
+                TrackError(e, "TaskException", stamp);
+        };
+
+#if ANDROID
+        Android.Runtime.AndroidEnvironment.UnhandledExceptionRaiser += (sender, args) =>
+        {
+            TrackError(args.Exception, "Crash", DateTime.UtcNow, true);
+            _nativeThrown = true;
+        };
+#endif
+
+#if IOS || MACCATALYST
+        // https://github.com/xamarin/xamarin-macios/issues/15252  
+        ObjCRuntime.Runtime.MarshalManagedException += (_, args) =>
+        {
+            args.ExceptionMode = ObjCRuntime.MarshalManagedExceptionMode.UnwindNativeCode;
+        };
+#endif
+    }
+
+    private void TrackError(Exception e, string error, DateTime timeStamp, bool fatal = false)
+    {
+#if ANDROID
+        if (_nativeThrown) return;
+#endif
+
+        string thing = $"{(fatal ? "Fatal " : string.Empty)}{e.GetType().Name}: {e.Message}";
+        string stamp = $"{timeStamp:o}";
+        int i = 0;
+
+        if (fatal && _pchannel is not null)
+            pauseProcessing = true;
+
+        // event 00 is the exception summary
+        TrackEvent(error, new Dictionary<string, object> { { stamp, $"{i++:00} {thing}" } });
+
+        // plus any stacktrace, events 01..nn will be sequenced under same stamp
+        if (string.IsNullOrEmpty(e.StackTrace))
+            return;
+
+        // this simple approach closely mimics the log emitted by mono_rt
+        foreach (var f in e.StackTrace.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            // elide noisy separators and runtime frames
+            if (!f.StartsWith("---") && !f.Contains(" System.Runtime."))
+                TrackEvent(error, new Dictionary<string, object> { { stamp, $"{i++:00} {f}" } });
+        }
+    }
+#endregion
 }
