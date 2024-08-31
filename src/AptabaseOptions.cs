@@ -18,11 +18,11 @@ public class AptabaseOptions
     /// <summary>
     /// Indicates whether the client should provide a reliable, persistent channel. This setting is optional and may be useful for crash reporting.
     /// </summary>
-    public bool? IsPersistent { get; set; }
+    public bool? EnablePersistence { get; set; }
 
     /// <summary>
     /// Indicates whether the client should provide simple crash reporting. This setting is optional and the use of a persistent channel is recommended.
     /// When set, any uncaught exception is timestamped and logged with a TrackEvent. If stacktrace frames are provided by the exception, an additional TrackEvent is logged for each frame.
     /// </summary>
-    public bool? IsSimpleCrashReporting { get; set; }
+    public bool? EnableCrashReporting { get; set; }
 }

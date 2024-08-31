@@ -10,13 +10,15 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
-            .UseAptabase("A-DEV-4957334021", new AptabaseOptions
+            .UseAptabase("A-EU-1687478437", new AptabaseOptions
 			{
 #if DEBUG
 				IsDebugMode = true,
 #else
 				IsDebugMode = false,
 #endif
+				EnableCrashReporting = true,
+				EnablePersistence = true,
 			})
             .ConfigureFonts(fonts =>
 			{

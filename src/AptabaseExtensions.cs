@@ -13,14 +13,26 @@ public static class AptabaseExtensions
     /// </summary>
     /// <param name="builder">The builder.</param>
     /// <param name="appKey">The App Key.</param>
+    /// <param name="options">Initialization Options.</param>
     /// <returns>The <paramref name="builder"/>.</returns>
     public static MauiAppBuilder UseAptabase(this MauiAppBuilder builder, string appKey, AptabaseOptions? options = null)
     {
-        builder.Services.AddSingleton<IAptabaseClient>(x =>
+        builder.Services.AddSingleton<IAptabaseClient>(serviceProvider =>
         {
-            var logger = x.GetService<ILogger<AptabaseClient>>();
-            return new AptabaseClient(appKey, options, logger);
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+
+            if (options?.EnablePersistence == true)
+            {
+                return new AptabasePersistentClient(appKey, options, loggerFactory.CreateLogger<AptabasePersistentClient>());
+            }
+
+            return new AptabaseClient(appKey, options, loggerFactory.CreateLogger<AptabaseClient>());
         });
+
+        if (options?.EnableCrashReporting == true)
+        {
+            builder.Services.AddSingleton<AptabaseCrashReporter>();
+        }
 
         return builder;
     }

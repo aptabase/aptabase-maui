@@ -8,7 +8,7 @@
 		<OutputType>Exe</OutputType>
 		<RootNamespace>HelloWorld</RootNamespace>
 		<UseMaui>true</UseMaui>
-		<MauiVersion>8.0.21</MauiVersion>
+		<MauiVersion>8.0.70</MauiVersion>
 		<SingleProject>true</SingleProject>
 		<ImplicitUsings>enable</ImplicitUsings>
 
