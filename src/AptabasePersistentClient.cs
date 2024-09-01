@@ -1,5 +1,6 @@
 ﻿using DotNext.Threading.Channels;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Platform;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
@@ -49,11 +50,6 @@ public class AptabasePersistentClient : IAptabaseClient
 
     private async ValueTask ProcessEventsAsync()
     {
-        if (_channel is null)
-        {
-            return;
-        }
-
         while (true)
         {
             if (_cts.IsCancellationRequested)
@@ -102,7 +98,11 @@ public class AptabasePersistentClient : IAptabaseClient
 
     public async ValueTask DisposeAsync()
     {
-        _cts?.Dispose();
+        try
+        {
+            _cts.Cancel();
+        }
+        catch { }
 
         _channel.Writer.Complete();
 
@@ -110,6 +110,8 @@ public class AptabasePersistentClient : IAptabaseClient
         {
             await _processingTask;
         }
+
+        _cts.Dispose();
 
         await _client.DisposeAsync();
 
