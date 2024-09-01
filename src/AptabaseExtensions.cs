@@ -19,20 +19,26 @@ public static class AptabaseExtensions
     {
         builder.Services.AddSingleton<IAptabaseClient>(serviceProvider =>
         {
+            IAptabaseClient client;
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
 
-            if (options?.EnablePersistence == true)
+            if (options?.EnablePersistence != true)
             {
-                return new AptabasePersistentClient(appKey, options, loggerFactory.CreateLogger<AptabasePersistentClient>());
+                client = new AptabaseClient(appKey, options, loggerFactory.CreateLogger<AptabaseClient>());
+            }
+            else
+            {
+                client = new AptabasePersistentClient(appKey, options, loggerFactory.CreateLogger<AptabasePersistentClient>());
             }
 
-            return new AptabaseClient(appKey, options, loggerFactory.CreateLogger<AptabaseClient>());
-        });
+            if (options?.EnableCrashReporting == true)
 
-        if (options?.EnableCrashReporting == true)
-        {
-            builder.Services.AddSingleton<AptabaseCrashReporter>();
-        }
+            {
+                _ = new AptabaseCrashReporter(client, loggerFactory.CreateLogger<AptabaseCrashReporter>());
+            }
+
+            return client;
+        });
 
         return builder;
     }
