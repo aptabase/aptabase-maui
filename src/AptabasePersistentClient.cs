@@ -1,6 +1,5 @@
 ﻿using DotNext.Threading.Channels;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Platform;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
@@ -18,6 +17,8 @@ public class AptabasePersistentClient : IAptabaseClient
     private readonly AptabaseClientBase _client;
     private readonly ILogger<AptabasePersistentClient>? _logger;
     private readonly CancellationTokenSource _cts;
+
+    private bool _pauseProcessing;
 
     public AptabasePersistentClient(string appKey, AptabaseOptions? options, ILogger<AptabasePersistentClient>? logger)
     {
@@ -37,6 +38,12 @@ public class AptabasePersistentClient : IAptabaseClient
     public async Task TrackEvent(string eventName, Dictionary<string, object>? props = null)
     {
         var eventData = new EventData(eventName, props);
+
+        if (eventName == "ApplicationCrash")
+        {
+            // pause ProcessEvents across crash recovery
+            _pauseProcessing = true;
+        }
 
         try
         {
@@ -78,6 +85,12 @@ public class AptabasePersistentClient : IAptabaseClient
                         _logger?.LogError("ProcessEvents undecodable event");
 
                         continue;
+                    }
+
+                    if (_pauseProcessing)
+                    {
+                        _pauseProcessing = false;   // will re-send after pause if non-fatal
+                        throw new Exception("Paused");
                     }
 
                     await _client.TrackEvent(eventData);
