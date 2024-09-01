@@ -42,8 +42,8 @@
 	  <CreatePackage>false</CreatePackage>
 	</PropertyGroup>
 	<ItemGroup>
-		<None Include="..\README.md" Pack="true" PackagePath="\" />
-		<None Include="..\etc\logo.png" Pack="true" PackagePath="\" />
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+		<None Include="..\..\etc\logo.png" Pack="true" PackagePath="\" />
 	</ItemGroup>
 	<ItemGroup>
 	  <PackageReference Include="DotNext.Threading" Version="5.9.0" />
