@@ -12,7 +12,7 @@ Instrument your apps with Aptabase, an Open Source, Privacy-First and, Simple An
 Start by adding the Aptabase NuGet package to your .csproj:
 
 ```xml
-<PackageReference Include="Aptabase.Maui" Version="0.0.9" />
+<PackageReference Include="Aptabase.Maui" Version="0.1.0" />
 ```
 
 ## Usage
@@ -34,6 +34,8 @@ public static MauiApp CreateMauiApp()
 #else
             IsDebugMode = false,
 #endif
+            EnableCrashReporting = true, // 👈 log app crashes, unhandled exceptions 
+            EnablePersistence = true, // 👈 persist events on disk before sending them to the server
         })
     ...
 }

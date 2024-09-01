@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<PackageId>Aptabase.Maui</PackageId>
-		<Version>0.0.9</Version>
+		<Version>0.1.0</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
 		<TargetFrameworks>net8.0;net8.0-android;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>

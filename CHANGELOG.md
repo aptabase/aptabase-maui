@@ -1,3 +1,15 @@
+## 0.1.0
+
+* Add `EnablePersistence` to persist events on disk before sending them to the server
+* Add `EnableCrashReporting` to log application crashes, unhandled exceptions
+
+## 0.0.9
+
+* Fix net8 compatibility issues
+* Use `System.Threading.Channels` to send events asynchronously
+* Add `IsDebugMode` to `AptabaseOptions` (fixes Android detection + avoids reflection if specified by the consumer of the sdk)
+* Add `DeviceModel` to system properties
+
 ## 0.0.8
 
 * Use new session id format
