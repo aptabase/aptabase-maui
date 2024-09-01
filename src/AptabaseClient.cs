@@ -78,7 +78,11 @@ public class AptabaseClient : IAptabaseClient
 
     public async ValueTask DisposeAsync()
     {
-        _cts?.Dispose();
+        try
+        {
+            _cts.Cancel();
+        }
+        catch { }
 
         _channel?.Writer.Complete();
 
@@ -86,6 +90,8 @@ public class AptabaseClient : IAptabaseClient
         {
             await _processingTask;
         }
+
+        _cts?.Dispose();
 
         await _client.DisposeAsync();
 
