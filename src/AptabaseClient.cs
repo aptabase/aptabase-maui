@@ -22,11 +22,6 @@ public class AptabaseClient : IAptabaseClient
 
     public Task TrackEvent(string eventName, Dictionary<string, object>? props = null)
     {
-        if (_channel is null)
-        {
-            return Task.CompletedTask;
-        }
-
         if (!_channel.Writer.TryWrite(new EventData(eventName, props)))
         {
             _logger?.LogError("Failed to perform TrackEvent");
@@ -37,11 +32,6 @@ public class AptabaseClient : IAptabaseClient
 
     private async Task ProcessEventsAsync()
     {
-        if (_channel is null)
-        {
-            return;
-        }
-
         try
         {
             while (await _channel.Reader.WaitToReadAsync())
@@ -84,14 +74,14 @@ public class AptabaseClient : IAptabaseClient
         }
         catch { }
 
-        _channel?.Writer.Complete();
+        _channel.Writer.Complete();
 
         if (_processingTask?.IsCompleted == false)
         {
             await _processingTask;
         }
 
-        _cts?.Dispose();
+        _cts.Dispose();
 
         await _client.DisposeAsync();
 

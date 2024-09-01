@@ -50,11 +50,6 @@ public class AptabasePersistentClient : IAptabaseClient
 
     private async ValueTask ProcessEventsAsync()
     {
-        if (_channel is null)
-        {
-            return;
-        }
-
         while (true)
         {
             if (_cts.IsCancellationRequested)
@@ -116,7 +111,7 @@ public class AptabasePersistentClient : IAptabaseClient
             await _processingTask;
         }
 
-        _cts?.Dispose();
+        _cts.Dispose();
 
         await _client.DisposeAsync();
 
