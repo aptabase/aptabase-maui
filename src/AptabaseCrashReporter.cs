@@ -61,6 +61,10 @@ public class AptabaseCrashReporter
         string stamp = $"{timeStamp:o}";
         int i = 0;
 
+        // include additional useful platform info
+        var di = DeviceInfo.Current;
+        thing += $" ({di.Platform}{di.VersionString}-{di.Manufacturer}-{di.Idiom}-{di.Model})";
+
         // event 00 is the exception summary
         _client.TrackEvent(error, new Dictionary<string, object> { { stamp, $"{i++:00} {thing}" } });
 
