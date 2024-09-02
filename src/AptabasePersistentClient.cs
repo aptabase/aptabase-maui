@@ -18,8 +18,6 @@ public class AptabasePersistentClient : IAptabaseClient
     private readonly ILogger<AptabasePersistentClient>? _logger;
     private readonly CancellationTokenSource _cts;
 
-    private bool _pauseProcessing;
-
     public AptabasePersistentClient(string appKey, AptabaseOptions? options, ILogger<AptabasePersistentClient>? logger)
     {
         _client = new AptabaseClientBase(appKey, options, logger);
@@ -39,12 +37,6 @@ public class AptabasePersistentClient : IAptabaseClient
     {
         var eventData = new EventData(eventName, props);
 
-        if (eventName == "ApplicationCrash")
-        {
-            // pause ProcessEvents across crash recovery
-            _pauseProcessing = true;
-        }
-
         try
         {
             await _channel.Writer.WriteAsync(eventData);
@@ -53,6 +45,13 @@ public class AptabasePersistentClient : IAptabaseClient
         {
             _logger?.LogError(ex, "Failed to perform TrackEvent");
         }
+    }
+
+    private int _paused;
+    public bool Paused
+    {
+        private get => Interlocked.Exchange(ref _paused, 0) != 0;
+        set => _ = Interlocked.Exchange(ref _paused, value ? 1 : 0);
     }
 
     private async ValueTask ProcessEventsAsync()
@@ -87,9 +86,8 @@ public class AptabasePersistentClient : IAptabaseClient
                         continue;
                     }
 
-                    if (_pauseProcessing)
+                    if (Paused) // resets, to restart if timeout completes
                     {
-                        _pauseProcessing = false;   // will re-send after pause if non-fatal
                         throw new Exception("Paused");
                     }
 
@@ -104,7 +102,7 @@ public class AptabasePersistentClient : IAptabaseClient
             {
                 _logger?.LogInformation(ex, "ProcessEvents retrying in {Seconds}s", _retrySeconds);
 
-                await Task.Delay(_retrySeconds * 1000);
+                await Task.Delay(_retrySeconds * 1000, _cts.Token);
             }
         }
     }

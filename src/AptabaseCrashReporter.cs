@@ -65,6 +65,11 @@ public class AptabaseCrashReporter
         var di = DeviceInfo.Current;
         thing += $" ({di.Platform}{di.VersionString}-{di.Manufacturer}-{di.Idiom}-{di.Model})";
 
+        if (fatal && _client is AptabasePersistentClient apc)
+        {
+            apc.Paused = true;  // queue events but don't start sending, to avoid duplicates or errors
+        }
+
         // event 00 is the exception summary
         _client.TrackEvent(error, new Dictionary<string, object> { { stamp, $"{i++:00} {thing}" } });
 
