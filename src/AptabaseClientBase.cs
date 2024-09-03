@@ -53,7 +53,7 @@ internal class AptabaseClientBase : IAsyncDisposable
         _http.DefaultRequestHeaders.Add("App-Key", appKey);
     }
 
-    internal async Task TrackEvent(EventData eventData)
+    internal async Task TrackEventAsync(EventData eventData, CancellationToken cancellationToken)
     {
         if (_http is null)
         {
@@ -67,7 +67,7 @@ internal class AptabaseClientBase : IAsyncDisposable
 
         var body = JsonContent.Create(eventData);
 
-        var response = await _http.PostAsync("/api/v0/event", body);
+        var response = await _http.PostAsync("/api/v0/event", body, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -79,7 +79,7 @@ internal class AptabaseClientBase : IAsyncDisposable
                 response.EnsureSuccessStatusCode();
             }
 
-            var responseBody = await response.Content.ReadAsStringAsync();
+            var responseBody = await response.Content.ReadAsStringAsync(CancellationToken.None);
 
             _logger?.LogError("Failed to perform TrackEvent due to {StatusCode} and response body {Body}", response.StatusCode, responseBody);
         }

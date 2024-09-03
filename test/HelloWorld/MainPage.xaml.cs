@@ -16,7 +16,7 @@ public partial class MainPage : ContentPage
 	private void OnCounterClicked(object sender, EventArgs e)
 	{
 		count++;
-		_aptabase.TrackEvent("Increment");
+		_aptabase.TrackEventAsync("Increment");
 
 		if (count == 1)
 			CounterBtn.Text = $"Clicked {count} time";

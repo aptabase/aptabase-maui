@@ -17,7 +17,7 @@ public static class AptabaseExtensions
     /// <returns>The <paramref name="builder"/>.</returns>
     public static MauiAppBuilder UseAptabase(this MauiAppBuilder builder, string appKey, AptabaseOptions? options = null)
     {
-        builder.Services.AddSingleton<IAptabaseClient>(serviceProvider =>
+        builder.Services.AddSingleton(serviceProvider =>
         {
             IAptabaseClient client;
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
@@ -32,9 +32,8 @@ public static class AptabaseExtensions
             }
 
             if (options?.EnableCrashReporting == true)
-
             {
-                _ = new AptabaseCrashReporter(client, loggerFactory.CreateLogger<AptabaseCrashReporter>());
+                _ = new AptabaseCrashReporter(client, options, loggerFactory.CreateLogger<AptabaseCrashReporter>());
             }
 
             return client;
