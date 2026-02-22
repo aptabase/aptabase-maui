@@ -1,0 +1,119 @@
+# Aptabase MAUI SDK
+
+> .NET MAUI SDK for Aptabase: privacy-first, open-source analytics for cross-platform .NET apps. NuGet package: Aptabase.Maui
+
+## Installation
+
+Install via NuGet:
+
+```
+dotnet add package Aptabase.Maui
+```
+
+Or add to your `.csproj`:
+
+```xml
+<PackageReference Include="Aptabase.Maui" Version="0.1.0" />
+```
+
+## Initialization
+
+Configure Aptabase in your `MauiProgram.cs` using the `UseAptabase` extension method:
+
+```csharp
+using Microsoft.Maui.Hosting;
+
+public static class MauiProgram
+{
+    public static MauiApp CreateMauiApp()
+    {
+        var builder = MauiApp.CreateBuilder();
+        builder
+            .UseMauiApp<App>()
+            .UseAptabase("<YOUR_APP_KEY>");
+
+        return builder.Build();
+    }
+}
+```
+
+This registers `IAptabaseClient` in the DI container. Inject it into pages or view models via constructor injection.
+
+## Track Events
+
+Inject `IAptabaseClient` and call `TrackEvent`:
+
+```csharp
+using Aptabase.Maui;
+
+public partial class MainPage : ContentPage
+{
+    private readonly IAptabaseClient _aptabase;
+
+    public MainPage(IAptabaseClient aptabase)
+    {
+        InitializeComponent();
+        _aptabase = aptabase;
+    }
+
+    private void OnStarted(object sender, EventArgs e)
+    {
+        _aptabase.TrackEvent("app_started");
+    }
+}
+```
+
+Register your page in the DI container in `MauiProgram.cs`:
+
+```csharp
+builder.Services.AddSingleton<MainPage>();
+```
+
+## Track Events with Properties
+
+Pass a `Dictionary<string, object>` as the second argument. Only string and numeric values are supported:
+
+```csharp
+_aptabase.TrackEvent("screen_view", new() {
+    { "name", "Settings" }
+});
+
+_aptabase.TrackEvent("purchase", new() {
+    { "product", "Premium" },
+    { "price", 9.99 }
+});
+```
+
+## Configuration
+
+Pass `AptabaseOptions` as the second argument to `UseAptabase`:
+
+```csharp
+builder.UseAptabase("<YOUR_APP_KEY>", new AptabaseOptions
+{
+    Host = "https://self-hosted.example.com",  // Self-hosted instances only
+    IsDebugMode = true,                        // Enable debug mode
+    EnablePersistence = true,                  // Persist events to disk before sending
+    EnableCrashReporting = true,               // Log unhandled exceptions as events
+});
+```
+
+| Option | Type | Description |
+|---|---|---|
+| `Host` | `string?` | Custom host URL for self-hosted Aptabase instances (app keys starting with `A-SH-`) |
+| `IsDebugMode` | `bool?` | Enable debug-specific logging. Commonly set via `#if DEBUG` preprocessor directive |
+| `EnablePersistence` | `bool?` | Persist events on disk before sending to server. Recommended when crash reporting is enabled |
+| `EnableCrashReporting` | `bool?` | Log unhandled exceptions as TrackEvent calls with stack trace frames |
+
+## Platform Notes
+
+- Supports all .NET MAUI platforms: Android, iOS, macOS, Windows
+- `TrackEvent` is non-blocking and runs in the background
+- The SDK automatically captures OS, app version, and device metadata
+- No events are tracked automatically — you control what gets sent
+- `IAptabaseClient` implements `IAsyncDisposable`
+- Only string and numeric property values are supported
+
+## Cross-Discovery
+
+For all Aptabase SDKs and documentation, see: https://aptabase.com/llms.txt

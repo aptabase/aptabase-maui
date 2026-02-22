@@ -94,3 +94,5 @@ A few important notes:
    - Because of this, it's generally recommended to at least track an event at startup
 3. The `TrackEvent` function is a non-blocking operation as it runs in the background.
 4. Only strings and numbers values are allowed on custom properties
+
+For AI/LLM integration instructions, see [llms.txt](./llms.txt)
