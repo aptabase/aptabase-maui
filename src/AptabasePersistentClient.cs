@@ -47,6 +47,13 @@ public class AptabasePersistentClient : IAptabaseClient
         }
     }
 
+    private int _paused;
+    public bool Paused
+    {
+        private get => Interlocked.Exchange(ref _paused, 0) != 0;
+        set => _ = Interlocked.Exchange(ref _paused, value ? 1 : 0);
+    }
+
     private async ValueTask ProcessEventsAsync()
     {
         while (true)
@@ -79,6 +86,11 @@ public class AptabasePersistentClient : IAptabaseClient
                         continue;
                     }
 
+                    if (Paused) // resets, to restart if timeout completes
+                    {
+                        throw new Exception("Paused");
+                    }
+
                     await _client.TrackEvent(eventData);
                 }
             }
@@ -90,7 +102,7 @@ public class AptabasePersistentClient : IAptabaseClient
             {
                 _logger?.LogInformation(ex, "ProcessEvents retrying in {Seconds}s", _retrySeconds);
 
-                await Task.Delay(_retrySeconds * 1000);
+                await Task.Delay(_retrySeconds * 1000, _cts.Token);
             }
         }
     }
