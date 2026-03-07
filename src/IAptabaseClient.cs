@@ -5,6 +5,9 @@
 /// </summary>
 public interface IAptabaseClient : IAsyncDisposable
 {
-    Task TrackEvent(string eventName, Dictionary<string, object>? props = null);
+    bool IsRunning { get; }
+    Task StartAsync();
+    Task StopAsync();
+    Task TrackEventAsync(string eventName, Dictionary<string, object>? props = null, CancellationToken cancellationToken = default);
 }
 

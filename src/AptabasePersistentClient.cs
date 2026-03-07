@@ -13,10 +13,12 @@ public class AptabasePersistentClient : IAptabaseClient
     private const int _retrySeconds = 30;
 
     private readonly PersistentEventDataChannel _channel;
-    private readonly Task? _processingTask;
     private readonly AptabaseClientBase _client;
     private readonly ILogger<AptabasePersistentClient>? _logger;
-    private readonly CancellationTokenSource _cts;
+    private Task? _processingTask;
+    private CancellationTokenSource? _cts;
+
+    public bool IsRunning => _processingTask != null && !_processingTask.IsCompleted;
 
     public AptabasePersistentClient(string appKey, AptabaseOptions? options, ILogger<AptabasePersistentClient>? logger)
     {
@@ -29,17 +31,61 @@ public class AptabasePersistentClient : IAptabaseClient
             Location = Path.Combine(FileSystem.CacheDirectory, "EventData"),
         });
         _logger = logger;
-        _cts = new CancellationTokenSource();
-        _processingTask = Task.Run(ProcessEventsAsync);
+
+        StartAsync();
     }
 
-    public async Task TrackEvent(string eventName, Dictionary<string, object>? props = null)
+    public Task StartAsync()
+    {
+        if (IsRunning)
+        {
+            return Task.CompletedTask;
+        }
+
+        _cts = new CancellationTokenSource();
+        _processingTask = ProcessEventsAsync(_cts.Token);
+
+        return Task.CompletedTask;
+    }
+
+    public async Task StopAsync()
+    {
+        if (!IsRunning)
+        {
+            return; 
+        }
+
+        if (_cts != null)
+        {
+            await _cts.CancelAsync();
+        }
+
+        try
+        {
+            if (_processingTask != null)
+            {
+                await _processingTask;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // ignore
+        }
+        finally
+        {
+            _cts?.Dispose();
+            _cts = null;
+            _processingTask = null;
+        }
+    }
+
+    public async Task TrackEventAsync(string eventName, Dictionary<string, object>? props = null, CancellationToken cancellationToken = default)
     {
         var eventData = new EventData(eventName, props);
 
         try
         {
-            await _channel.Writer.WriteAsync(eventData);
+            await _channel.Writer.WriteAsync(eventData, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -47,23 +93,15 @@ public class AptabasePersistentClient : IAptabaseClient
         }
     }
 
-    private async ValueTask ProcessEventsAsync()
+    private async Task ProcessEventsAsync(CancellationToken cancellationToken)
     {
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
         {
-            if (_cts.IsCancellationRequested)
-            {
-                break;
-            }
-
             try
             {
-                await foreach (EventData eventData in _channel.Reader.ReadAllAsync())
+                await foreach (EventData eventData in _channel.Reader.ReadAllAsync(cancellationToken))
                 {
-                    if (_cts.IsCancellationRequested)
-                    {
-                        break;
-                    }
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (_channel.RemainingCount > _maxPersistedEvents)
                     {
@@ -79,7 +117,7 @@ public class AptabasePersistentClient : IAptabaseClient
                         continue;
                     }
 
-                    await _client.TrackEvent(eventData);
+                    await _client.TrackEventAsync(eventData, cancellationToken);
                 }
             }
             catch (ChannelClosedException)
@@ -90,27 +128,16 @@ public class AptabasePersistentClient : IAptabaseClient
             {
                 _logger?.LogInformation(ex, "ProcessEvents retrying in {Seconds}s", _retrySeconds);
 
-                await Task.Delay(_retrySeconds * 1000);
+                await Task.Delay(_retrySeconds * 1000, cancellationToken);
             }
         }
     }
 
     public async ValueTask DisposeAsync()
     {
-        try
-        {
-            _cts.Cancel();
-        }
-        catch { }
-
         _channel.Writer.Complete();
 
-        if (_processingTask?.IsCompleted == false)
-        {
-            await _processingTask;
-        }
-
-        _cts.Dispose();
+        await StopAsync();
 
         await _client.DisposeAsync();
 

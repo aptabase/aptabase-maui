@@ -6,16 +6,19 @@ public class AptabaseCrashReporter
 {
     private readonly IAptabaseClient _client;
     private readonly ILogger<AptabaseCrashReporter>? _logger;
+    private readonly AptabaseOptions? _options;
+    private const int _pauseTimeoutSeconds = 30;
 
 #if ANDROID
     // the UnhandledExceptionRaiser fires first, but others may fire redundantly soon after
     private bool _nativeThrown;
 #endif
 
-    public AptabaseCrashReporter(IAptabaseClient client, ILogger<AptabaseCrashReporter>? logger)
+    public AptabaseCrashReporter(IAptabaseClient client, AptabaseOptions? options, ILogger<AptabaseCrashReporter>? logger)
     {
         _client = client;
         _logger = logger;
+        _options = options;
 
         RegisterUncaughtExceptionHandler();
     }
@@ -61,8 +64,23 @@ public class AptabaseCrashReporter
         string stamp = $"{timeStamp:o}";
         int i = 0;
 
+        // include additional useful platform info
+        var di = DeviceInfo.Current;
+        thing += $" ({di.Platform}{di.VersionString}-{di.Manufacturer}-{di.Idiom}-{di.Model})";
+
+        if (fatal && _options?.EnablePersistence == true)
+        {
+            _client.StopAsync(); // queue events but don't start sending, to avoid duplicates or errors
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(_pauseTimeoutSeconds * 1000);
+                await _client.StartAsync();
+            });
+        }
+
         // event 00 is the exception summary
-        _client.TrackEvent(error, new Dictionary<string, object> { { stamp, $"{i++:00} {thing}" } });
+        _client.TrackEventAsync(error, new Dictionary<string, object> { { stamp, $"{i++:00} {thing}" } });
 
         // plus any stacktrace, events 01..nn will be sequenced under same stamp
         if (string.IsNullOrEmpty(e.StackTrace))
@@ -73,7 +91,7 @@ public class AptabaseCrashReporter
         {
             // elide noisy separators and runtime frames
             if (!f.StartsWith("---") && !f.Contains(" System.Runtime."))
-                _client.TrackEvent(error, new Dictionary<string, object> { { stamp, $"{i++:00} {f}" } });
+                _client.TrackEventAsync(error, new Dictionary<string, object> { { stamp, $"{i++:00} {f}" } });
         }
 
         _logger?.LogError(e, "Tracked error: {ErrorType}", error);

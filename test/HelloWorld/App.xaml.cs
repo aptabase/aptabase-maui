@@ -10,7 +10,7 @@ public partial class App : Application
 
 		MainPage = new AppShell();
 
-		aptabase.TrackEvent("app_started");
+		aptabase.TrackEventAsync("app_started");
 	}
 }
 
