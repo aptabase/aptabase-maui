@@ -1,3 +1,19 @@
+## 0.2.3
+
+* Handle UnauthorizedException in sandboxed environments on Linux.
+
+## 0.2.2
+
+* Fix JsonElement not being included in AptabaseContext for NativeAOT.
+
+## 0.2.1
+
+* Add NativeAOT support by using JsonSerializer source generator API.
+
+## 0.2.0
+
+* Add `Aptabase.Core` for generic `.NET 8` support (Does not support crash reporter)
+
 ## 0.1.0
 
 * Add `EnablePersistence` to persist events on disk before sending them to the server

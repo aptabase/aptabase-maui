@@ -4,34 +4,60 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-maui:
     runs-on: windows-latest
-    name: Update NuGet package
+    name: Update Aptabase.Maui NuGet package
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup .NET Core @ Latest
         uses: actions/setup-dotnet@v4
-        
+
       - name: Setup JDK 11
         uses: actions/setup-java@v2
         with:
-          java-version: '11' 
-          distribution: 'adopt'  
-          
+          java-version: '11'
+          distribution: 'adopt'
+
       - name: Extract Version from csproj
         id: get_version
         run: |
-          $version = Select-String -Path "./src/Aptabase.Maui.csproj" -Pattern '<Version>(.*)</Version>' | ForEach-Object { $_.Matches.Groups[1].Value }
+          $version = Select-String -Path "./src/Aptabase.Maui/Aptabase.Maui.csproj" -Pattern '<Version>(.*)</Version>' | ForEach-Object { $_.Matches.Groups[1].Value }
           echo "PackageVersion=$version" | Out-File -Append -FilePath $env:GITHUB_ENV
         shell: powershell
 
-      - name: Build and Publish
+      - name: Build and Publish Aptabase.Maui
         run: |
-          cd ./src/
+          cd ./src/Aptabase.Maui
           dotnet restore Aptabase.Maui.csproj
           dotnet pack Aptabase.Maui.csproj -c Release -o artifacts -p:PackageVersion=${{ env.PackageVersion }}
 
-      - name: Push
-        run: dotnet nuget push ./src/artifacts/Aptabase.Maui.${{ env.PackageVersion }}.nupkg -k ${{ secrets.NUGET_APIKEY }} -s https://api.nuget.org/v3/index.json
+      - name: Push Aptabase.Maui Package
+        run: dotnet nuget push ./src/Aptabase.Maui/artifacts/Aptabase.Maui.${{ env.PackageVersion }}.nupkg -k ${{ secrets.NUGET_APIKEY }} -s https://api.nuget.org/v3/index.json
+
+  build-core:
+    runs-on: ubuntu-latest
+    name: Build and Publish Aptabase.Core NuGet package
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET Core @ Latest
+        uses: actions/setup-dotnet@v4
+
+      - name: Extract Version from csproj
+        id: get_version_core
+        run: |
+          $version = Select-String -Path "./src/Aptabase.Core/Aptabase.Core.csproj" -Pattern '<Version>(.*)</Version>' | ForEach-Object { $_.Matches.Groups[1].Value }
+          echo "PackageVersion=$version" | Out-File -Append -FilePath $env:GITHUB_ENV
+        shell: bash
+
+      - name: Build and Publish Aptabase.Core
+        run: |
+          cd ./src/Aptabase.Core
+          dotnet restore Aptabase.Core.csproj
+          dotnet pack Aptabase.Core.csproj -c Release -o artifacts -p:PackageVersion=${{ env.PackageVersion }}
+
+      - name: Push Aptabase.Core Package
+        run: dotnet nuget push ./src/Aptabase.Core/artifacts/Aptabase.Core.${{ env.PackageVersion }}.nupkg -k ${{ secrets.NUGET_APIKEY }} -s https://api.nuget.org/v3/index.json

@@ -1,6 +1,6 @@
 ![Aptabase](https://raw.githubusercontent.com/aptabase/aptabase-com/main/public/og.png)
 
-# MAUI SDK for Aptabase
+# .NET SDK for Aptabase
 
 [![NuGet](https://img.shields.io/nuget/v/Aptabase.Maui)](https://www.nuget.org/packages/Aptabase.Maui) 
 [![GitHub](https://img.shields.io/github/license/aptabase/aptabase-maui)](https://github.com/aptabase/aptabase-maui/blob/main/LICENSE)
@@ -12,10 +12,51 @@ Instrument your apps with Aptabase, an Open Source, Privacy-First and, Simple An
 Start by adding the Aptabase NuGet package to your .csproj:
 
 ```xml
-<PackageReference Include="Aptabase.Maui" Version="0.1.0" />
+<PackageReference Include="Aptabase.Core" Version="0.2.0" />
 ```
 
-## Usage
+Or, if you're using MAUI
+
+```xml
+<PackageReference Include="Aptabase.Maui" Version="0.2.0" />
+```
+
+## Usage (.NET)
+
+First, you need to get your `App Key` from Aptabase, you can find it in the `Instructions` menu on the left side menu.
+
+Change your `Program.cs` to add Aptabase:
+
+```csharp
+// Create a ServiceCollection
+var services = new ServiceCollection();
+
+services.AddLogging(); // If you haven't registered a logger yet
+
+// Add Aptabase to the service collection
+services.UseAptabase("<YOUR_APP_KEY>", new AptabaseOptions
+{
+#if DEBUG
+   IsDebugMode = true,
+#else
+   IsDebugMode = false,
+#endif
+   EnableCrashReporting = false,  // ❌ Not supported with Aptabase.Core, only Aptabase.Maui 
+   EnablePersistence = true,
+});
+
+// ... Register other services you need ...
+
+// Build the service provider
+var serviceProvider = services.BuildServiceProvider();
+
+// Get an instance of the Aptabase service (if you need it directly)
+var aptabaseClient = serviceProvider.GetRequiredService<IAptabaseClient>(); 
+...
+}
+```
+
+## Usage (Maui)
 
 First, you need to get your `App Key` from Aptabase, you can find it in the `Instructions` menu on the left side menu.
 
