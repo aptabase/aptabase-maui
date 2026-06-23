@@ -3,7 +3,7 @@ using System.Threading.Channels;
 
 namespace Aptabase.Maui;
 
-public class AptabaseClient : IAptabaseClient
+public class AptabaseClient : IAptabaseClient, IErrorTracker
 {
     private readonly Channel<EventData> _channel;
     private readonly Task _processingTask;
@@ -28,6 +28,23 @@ public class AptabaseClient : IAptabaseClient
         }
 
         return Task.CompletedTask;
+    }
+
+    public Task TrackError(Exception exception, bool fatal = false)
+        => ((IErrorTracker)this).TrackError(exception, fatal, fatal ? "crash" : "handled");
+
+    async Task IErrorTracker.TrackError(Exception exception, bool fatal, string kind)
+    {
+        var errorData = ErrorData.FromException(exception, fatal, kind);
+
+        try
+        {
+            await _client.TrackError(errorData);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to perform TrackError");
+        }
     }
 
     private async Task ProcessEventsAsync()

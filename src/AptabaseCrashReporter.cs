@@ -24,20 +24,19 @@ public class AptabaseCrashReporter
     {
         AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
         {
-            TrackError((Exception)e.ExceptionObject, e.IsTerminating ? "ApplicationCrash" : "ApplicationException", DateTime.UtcNow, e.IsTerminating);
+            TrackError((Exception)e.ExceptionObject, e.IsTerminating ? "crash" : "unhandled", e.IsTerminating);
         };
 
         TaskScheduler.UnobservedTaskException += (sender, ueargs) =>
         {
-            var stamp = DateTime.UtcNow;
             foreach (var e in ueargs.Exception.InnerExceptions)
-                TrackError(e, "ApplicationTaskException", stamp);
+                TrackError(e, "taskException");
         };
 
 #if ANDROID
         Android.Runtime.AndroidEnvironment.UnhandledExceptionRaiser += (sender, args) =>
         {
-            TrackError(args.Exception, "ApplicationCrash", DateTime.UtcNow, true);
+            TrackError(args.Exception, "crash", true);
             _nativeThrown = true;
         };
 #endif
@@ -51,31 +50,30 @@ public class AptabaseCrashReporter
 #endif
     }
 
-    private void TrackError(Exception e, string error, DateTime timeStamp, bool fatal = false)
+    // How long to block a terminating crash so the error can be persisted/sent
+    // before the runtime tears the process down.
+    private static readonly TimeSpan FatalFlushTimeout = TimeSpan.FromSeconds(3);
+
+    private void TrackError(Exception e, string kind, bool fatal = false)
     {
 #if ANDROID
         if (_nativeThrown) return;
 #endif
 
-        string thing = $"{(fatal ? "Fatal " : string.Empty)}{e.GetType().Name}: {e.Message}";
-        string stamp = $"{timeStamp:o}";
-        int i = 0;
+        // Use the richer internal path when available so the error source ("crash",
+        // "unhandled", "taskException") is preserved; fall back to the public API otherwise.
+        var sendTask = _client is IErrorTracker tracker
+            ? tracker.TrackError(e, fatal, kind)
+            : _client.TrackError(e, fatal);
 
-        // event 00 is the exception summary
-        _client.TrackEvent(error, new Dictionary<string, object> { { stamp, $"{i++:00} {thing}" } });
-
-        // plus any stacktrace, events 01..nn will be sequenced under same stamp
-        if (string.IsNullOrEmpty(e.StackTrace))
-            return;
-
-        // this simple approach closely mimics the log emitted by mono_rt
-        foreach (var f in e.StackTrace.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        if (fatal)
         {
-            // elide noisy separators and runtime frames
-            if (!f.StartsWith("---") && !f.Contains(" System.Runtime."))
-                _client.TrackEvent(error, new Dictionary<string, object> { { stamp, $"{i++:00} {f}" } });
+            // The process is terminating: block (best effort) so the persistent client
+            // can flush to disk / the in-memory client can complete the POST.
+            try { sendTask.Wait(FatalFlushTimeout); }
+            catch { /* best effort during teardown */ }
         }
 
-        _logger?.LogError(e, "Tracked error: {ErrorType}", error);
+        _logger?.LogError(e, "Tracked error: {Kind}", kind);
     }
 }

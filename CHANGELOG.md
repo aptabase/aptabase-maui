@@ -1,3 +1,7 @@
+## Unreleased
+
+* Include `isDebug` in error reports so debug-build errors can be separated from production data server-side
+
 ## 0.1.0
 
 * Add `EnablePersistence` to persist events on disk before sending them to the server

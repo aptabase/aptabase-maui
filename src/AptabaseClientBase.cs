@@ -85,6 +85,85 @@ internal class AptabaseClientBase : IAsyncDisposable
         }
     }
 
+    // Identifies the SDK platform server-side; distinct from the OS name.
+    private const string PlatformName = ".NET MAUI";
+
+    // Field limits enforced by the host's ErrorBody.IsValid(); exceeding any of these
+    // causes the whole error to be rejected with 400, so we truncate before sending.
+    private const int MaxErrorMessage = 5000;
+    private const int MaxErrorType = 100;
+    private const int MaxStackTrace = 10000;
+    private const int MaxPlatform = 30;
+    private const int MaxOsName = 30;
+    private const int MaxOsVersion = 100;
+    private const int MaxAppVersion = 50;
+    private const int MaxSdkVersion = 40;
+    private const int MaxSessionId = 100;
+
+    internal bool IsEnabled => _http is not null;
+
+    // Stamps the error with session/system context and clamps every field to the host's
+    // limits. Done at capture time so persisted crashes keep their original context even
+    // when delivered on a later launch.
+    internal void EnrichError(ErrorData errorData)
+    {
+        RefreshSession();
+
+        errorData.SessionId = Truncate(_sessionId, MaxSessionId);
+        errorData.Platform = Truncate(PlatformName, MaxPlatform);
+        errorData.OsName = Truncate(_sysInfo.OsName, MaxOsName);
+        errorData.OsVersion = Truncate(_sysInfo.OsVersion, MaxOsVersion);
+        errorData.AppVersion = Truncate(_sysInfo.AppVersion, MaxAppVersion);
+        errorData.SdkVersion = Truncate(_sysInfo.SdkVersion, MaxSdkVersion);
+        errorData.IsDebug = _sysInfo.IsDebug;
+
+        errorData.ErrorMessage = Truncate(errorData.ErrorMessage, MaxErrorMessage)!;
+        errorData.ErrorType = Truncate(errorData.ErrorType, MaxErrorType)!;
+        errorData.StackTrace = Truncate(errorData.StackTrace, MaxStackTrace);
+    }
+
+    internal async Task SendErrorAsync(ErrorData errorData)
+    {
+        if (_http is null)
+        {
+            return;
+        }
+
+        var body = JsonContent.Create(errorData);
+
+        var response = await _http.PostAsync("/api/v0/error", body);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            if (response.StatusCode >= HttpStatusCode.InternalServerError ||
+                response.StatusCode == HttpStatusCode.RequestTimeout ||
+                response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                // throw error, should be retried
+                response.EnsureSuccessStatusCode();
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            _logger?.LogError("Failed to perform TrackError due to {StatusCode} and response body {Body}", response.StatusCode, responseBody);
+        }
+    }
+
+    // Convenience path for the in-memory client: enrich and send in one step.
+    internal async Task TrackError(ErrorData errorData)
+    {
+        if (_http is null)
+        {
+            return;
+        }
+
+        EnrichError(errorData);
+        await SendErrorAsync(errorData);
+    }
+
+    private static string? Truncate(string? value, int maxLength)
+        => value is { Length: > 0 } && value.Length > maxLength ? value[..maxLength] : value;
+
     public virtual ValueTask DisposeAsync()
     {
         _http?.Dispose();
