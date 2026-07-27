@@ -13,7 +13,7 @@ dotnet add package Aptabase.Maui
 Or add to your `.csproj`:
 
 ```xml
-<PackageReference Include="Aptabase.Maui" Version="0.1.0" />
+<PackageReference Include="Aptabase.Maui" Version="0.2.0" />
 ```
 
 ## Initialization
@@ -84,6 +84,25 @@ _aptabase.TrackEvent("purchase", new() {
 });
 ```
 
+## Track Errors
+
+Report handled errors and crashes with `TrackError` (error reporting is in beta):
+
+```csharp
+try
+{
+    await DoSomething();
+}
+catch (Exception ex)
+{
+    await _aptabase.TrackError(ex);              // severity "error", kind "handled"
+    // or, for errors the app cannot recover from:
+    await _aptabase.TrackError(ex, fatal: true); // severity "fatal", kind "crash"
+}
+```
+
+Reports include the exception type, message, stack trace, severity and kind. With `EnableCrashReporting`, unhandled exceptions, unobserved task exceptions and native crashes are reported automatically. Combine with `EnablePersistence` so fatal crashes are persisted on disk and delivered on the next app launch.
+
 ## Configuration
 
 Pass `AptabaseOptions` as the second argument to `UseAptabase`:
@@ -94,7 +113,7 @@ builder.UseAptabase("<YOUR_APP_KEY>", new AptabaseOptions
     Host = "https://self-hosted.example.com",  // Self-hosted instances only
     IsDebugMode = true,                        // Enable debug mode
     EnablePersistence = true,                  // Persist events to disk before sending
-    EnableCrashReporting = true,               // Log unhandled exceptions as events
+    EnableCrashReporting = true,               // Report crashes and unhandled exceptions automatically
 });
 ```
 
@@ -103,12 +122,13 @@ builder.UseAptabase("<YOUR_APP_KEY>", new AptabaseOptions
 | `Host` | `string?` | Custom host URL for self-hosted Aptabase instances (app keys starting with `A-SH-`) |
 | `IsDebugMode` | `bool?` | Enable debug-specific logging. Commonly set via `#if DEBUG` preprocessor directive |
 | `EnablePersistence` | `bool?` | Persist events on disk before sending to server. Recommended when crash reporting is enabled |
-| `EnableCrashReporting` | `bool?` | Log unhandled exceptions as TrackEvent calls with stack trace frames |
+| `EnableCrashReporting` | `bool?` | Automatically report unhandled exceptions, unobserved task exceptions and crashes as error reports |
 
 ## Platform Notes
 
 - Supports all .NET MAUI platforms: Android, iOS, macOS, Windows
 - `TrackEvent` is non-blocking and runs in the background
+- `TrackError` reports handled errors and crashes; shown on the Errors page of the dashboard (beta)
 - The SDK automatically captures OS, app version, and device metadata
 - No events are tracked automatically — you control what gets sent
 - `IAptabaseClient` implements `IAsyncDisposable`
