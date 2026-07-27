@@ -17,9 +17,13 @@ jobs:
       - name: Setup JDK 11
         uses: actions/setup-java@v2
         with:
-          java-version: '11' 
-          distribution: 'adopt'  
-          
+          java-version: '11'
+          distribution: 'adopt'
+
+      - name: Install .NET workloads
+        run: dotnet workload restore Aptabase.Maui.csproj
+        working-directory: ./src
+
       - name: Extract Version from csproj
         id: get_version
         run: |
