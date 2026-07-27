@@ -38,4 +38,4 @@ jobs:
           dotnet pack Aptabase.Maui.csproj -c Release -o artifacts -p:PackageVersion=${{ env.PackageVersion }}
 
       - name: Push
-        run: dotnet nuget push ./src/artifacts/Aptabase.Maui.${{ env.PackageVersion }}.nupkg -k ${{ secrets.NUGET_APIKEY }} -s https://api.nuget.org/v3/index.json
+        run: dotnet nuget push ./src/artifacts/Aptabase.Maui.${{ env.PackageVersion }}.nupkg -s https://api.nuget.org/v3/index.json
