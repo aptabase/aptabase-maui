@@ -1,6 +1,10 @@
-## Unreleased
+## 0.2.0
 
+* Add `TrackError(Exception, fatal)` to `IAptabaseClient` for reporting handled errors and crashes
+* Crash reporter now sends structured error reports (error type, message, stack trace, severity, kind) instead of synthesized events
+* Persist error reports on disk when `EnablePersistence` is set, so fatal crashes are delivered on the next app launch
 * Include `isDebug` in error reports so debug-build errors can be separated from production data server-side
+* Trust the local dev certificate on Mac Catalyst when targeting a local Aptabase instance
 
 ## 0.1.0
 
