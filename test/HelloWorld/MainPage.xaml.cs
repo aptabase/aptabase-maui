@@ -25,4 +25,38 @@ public partial class MainPage : ContentPage
 
 		SemanticScreenReader.Announce(CounterBtn.Text);
 	}
+
+	private async void OnTrackHandledErrorClicked(object sender, EventArgs e)
+	{
+		try
+		{
+			ThrowDeep("handled test error from HelloWorld");
+		}
+		catch (Exception ex)
+		{
+			await _aptabase.TrackError(ex);
+		}
+	}
+
+	private async void OnTrackFatalErrorClicked(object sender, EventArgs e)
+	{
+		try
+		{
+			ThrowDeep("fatal test error from HelloWorld");
+		}
+		catch (Exception ex)
+		{
+			await _aptabase.TrackError(ex, fatal: true);
+		}
+	}
+
+	private void OnCrashClicked(object sender, EventArgs e)
+	{
+		ThrowDeep("unhandled test crash from HelloWorld");
+	}
+
+	// A little call depth so the reported stack trace has something to show
+	private static void ThrowDeep(string message) => ThrowInner(message);
+
+	private static void ThrowInner(string message) => throw new InvalidOperationException(message);
 }

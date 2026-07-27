@@ -12,7 +12,7 @@ Instrument your apps with Aptabase, an Open Source, Privacy-First and, Simple An
 Start by adding the Aptabase NuGet package to your .csproj:
 
 ```xml
-<PackageReference Include="Aptabase.Maui" Version="0.1.0" />
+<PackageReference Include="Aptabase.Maui" Version="0.2.0" />
 ```
 
 ## Usage
@@ -94,5 +94,32 @@ A few important notes:
    - Because of this, it's generally recommended to at least track an event at startup
 3. The `TrackEvent` function is a non-blocking operation as it runs in the background.
 4. Only strings and numbers values are allowed on custom properties
+
+## Error Tracking
+
+> Error reporting is in beta. Reports appear on the `Errors` page of your Aptabase dashboard.
+
+Use `TrackError` to report errors you've caught and handled:
+
+```csharp
+try
+{
+    await DoSomething();
+}
+catch (Exception ex)
+{
+    await _aptabase.TrackError(ex); // severity: error
+}
+```
+
+For errors your app can't recover from, mark the report as fatal:
+
+```csharp
+await _aptabase.TrackError(ex, fatal: true); // severity: fatal
+```
+
+With `EnableCrashReporting` set, the SDK also reports unhandled exceptions, unobserved task exceptions and crashes automatically — no extra code needed. Enable `EnablePersistence` alongside it so fatal crashes are stored on disk and delivered the next time your app starts.
+
+Each report includes the exception type, message, stack trace, severity (`error` or `fatal`) and source (`handled`, `unhandled`, `taskException` or `crash`).
 
 For AI/LLM integration instructions, see [llms.txt](./llms.txt)

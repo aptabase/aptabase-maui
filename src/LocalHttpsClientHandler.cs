@@ -1,7 +1,7 @@
 ﻿#if ANDROID
 using Xamarin.Android.Net;
 #endif
-#if IOS
+#if IOS || MACCATALYST
 using Foundation;
 #endif
 
@@ -23,7 +23,7 @@ public class LocalHttpsClientHandler : DelegatingHandler
                 return errors == System.Net.Security.SslPolicyErrors.None;
             }
         };
-#elif IOS
+#elif IOS || MACCATALYST
         InnerHandler = new NSUrlSessionHandler
         {
             TrustOverrideForUrl = (sender, url, trust) => url.StartsWith("https://localhost"),
