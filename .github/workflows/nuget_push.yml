@@ -7,6 +7,9 @@ jobs:
   build:
     runs-on: windows-latest
     name: Update NuGet package
+    permissions:
+      id-token: write # required for NuGet Trusted Publishing (OIDC)
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,5 +40,11 @@ jobs:
           dotnet restore Aptabase.Maui.csproj
           dotnet pack Aptabase.Maui.csproj -c Release -o artifacts -p:PackageVersion=${{ env.PackageVersion }}
 
+      - name: NuGet login (Trusted Publishing)
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+        id: nuget_login
+        with:
+          user: aptabase
+
       - name: Push
-        run: dotnet nuget push ./src/artifacts/Aptabase.Maui.${{ env.PackageVersion }}.nupkg -s https://api.nuget.org/v3/index.json
+        run: dotnet nuget push ./src/artifacts/Aptabase.Maui.${{ env.PackageVersion }}.nupkg -s https://api.nuget.org/v3/index.json --api-key ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
