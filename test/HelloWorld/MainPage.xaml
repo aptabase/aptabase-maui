@@ -35,6 +35,24 @@
                 Clicked="OnCounterClicked"
                 HorizontalOptions="Center" />
 
+            <Button
+                Text="Track handled error"
+                SemanticProperties.Hint="Sends a handled error report"
+                Clicked="OnTrackHandledErrorClicked"
+                HorizontalOptions="Center" />
+
+            <Button
+                Text="Track fatal error"
+                SemanticProperties.Hint="Sends an error report marked as fatal"
+                Clicked="OnTrackFatalErrorClicked"
+                HorizontalOptions="Center" />
+
+            <Button
+                Text="Crash: unhandled exception"
+                SemanticProperties.Hint="Throws an unhandled exception to exercise the crash reporter"
+                Clicked="OnCrashClicked"
+                HorizontalOptions="Center" />
+
         </VerticalStackLayout>
     </ScrollView>
 
