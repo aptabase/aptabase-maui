@@ -12,6 +12,7 @@ public class AptabasePersistentClient : IAptabaseClient, IErrorTracker
     private const string _invalidPersistedEvent = "%%%DELETE%%%";
     private const string _invalidPersistedError = "%%%DELETE%%%";
     private const int _retrySeconds = 30;
+    private const int _maxRetrySeconds = 300;
 
     private readonly PersistentEventDataChannel _channel;
     private readonly PersistentErrorDataChannel _errorChannel;
@@ -87,6 +88,8 @@ public class AptabasePersistentClient : IAptabaseClient, IErrorTracker
 
     private async ValueTask ProcessEventsAsync()
     {
+        var backoffSeconds = 0;
+
         while (true)
         {
             if (_cts.IsCancellationRequested)
@@ -117,7 +120,28 @@ public class AptabasePersistentClient : IAptabaseClient, IErrorTracker
                         continue;
                     }
 
-                    await _client.TrackEvent(eventData);
+                    try
+                    {
+                        await _client.TrackEvent(eventData);
+
+                        backoffSeconds = 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_cts.IsCancellationRequested)
+                        {
+                            // Break without asking for the next item. ReliableEnumeration leaves
+                            // this one unread, so it is still queued on the next launch.
+                            break;
+                        }
+
+                        backoffSeconds = NextBackoffSeconds(backoffSeconds);
+
+                        _logger?.LogInformation(ex, "ProcessEvents requeued {Name}@{Timestamp}, next attempt in up to {Seconds}s", eventData.EventName, eventData.Timestamp, backoffSeconds);
+
+                        await RequeueAsync(_channel.Writer, eventData, "ProcessEvents", eventData.EventName, eventData.Timestamp);
+                        await DelayAsync(backoffSeconds);
+                    }
                 }
             }
             catch (ChannelClosedException)
@@ -128,13 +152,15 @@ public class AptabasePersistentClient : IAptabaseClient, IErrorTracker
             {
                 _logger?.LogInformation(ex, "ProcessEvents retrying in {Seconds}s", _retrySeconds);
 
-                await Task.Delay(_retrySeconds * 1000);
+                await DelayAsync(_retrySeconds);
             }
         }
     }
 
     private async ValueTask ProcessErrorsAsync()
     {
+        var backoffSeconds = 0;
+
         while (true)
         {
             if (_cts.IsCancellationRequested)
@@ -158,8 +184,27 @@ public class AptabasePersistentClient : IAptabaseClient, IErrorTracker
                         continue;
                     }
 
-                    // Already enriched and truncated at capture time; just deliver it.
-                    await _client.SendErrorAsync(errorData);
+                    try
+                    {
+                        // Already enriched and truncated at capture time; just deliver it.
+                        await _client.SendErrorAsync(errorData);
+
+                        backoffSeconds = 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_cts.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
+                        backoffSeconds = NextBackoffSeconds(backoffSeconds);
+
+                        _logger?.LogInformation(ex, "ProcessErrors requeued {Type}@{Timestamp}, next attempt in up to {Seconds}s", errorData.ErrorType, errorData.Timestamp, backoffSeconds);
+
+                        await RequeueAsync(_errorChannel.Writer, errorData, "ProcessErrors", errorData.ErrorType, errorData.Timestamp);
+                        await DelayAsync(backoffSeconds);
+                    }
                 }
             }
             catch (ChannelClosedException)
@@ -170,8 +215,57 @@ public class AptabasePersistentClient : IAptabaseClient, IErrorTracker
             {
                 _logger?.LogInformation(ex, "ProcessErrors retrying in {Seconds}s", _retrySeconds);
 
-                await Task.Delay(_retrySeconds * 1000);
+                await DelayAsync(_retrySeconds);
             }
+        }
+    }
+
+    // Puts an item that could not be delivered back at the tail of the queue.
+    //
+    // This is what stops one failing send from blocking everything behind it. Both channels use
+    // ReliableEnumeration, so an item is only marked as read once the reader asks for the next
+    // one. Letting the send exception unwind the read loop leaves the failed item unread, and
+    // re-entering the loop is served the same item forever. Requeueing lets the reader move on
+    // while still keeping the item, so nothing is discarded just because a send failed.
+    //
+    // Delivery is therefore at-least-once: a send whose response is lost, or a crash between the
+    // requeue and the reader advancing, can produce a duplicate. That was already true of the
+    // retry behaviour this replaces.
+    private async Task RequeueAsync<T>(ChannelWriter<T> writer, T item, string source, string description, string timestamp)
+    {
+        try
+        {
+            await writer.WriteAsync(item, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            // Only reachable once the channel is closing, in which case the item is genuinely lost.
+            _logger?.LogError(ex, "{Source} could not requeue {Description}@{Timestamp}", source, description, timestamp);
+        }
+    }
+
+    private static int NextBackoffSeconds(int current)
+        => current == 0 ? _retrySeconds : Math.Min(current * 2, _maxRetrySeconds);
+
+    // Cancellation here means the app is shutting down, which is not an error worth surfacing.
+    // Observing the token also keeps DisposeAsync from waiting out a full backoff.
+    //
+    // The delay is jittered so a fleet of clients does not retry a recovering server in lockstep.
+    private async Task DelayAsync(int seconds)
+    {
+        if (seconds <= 0)
+        {
+            return;
+        }
+
+        var milliseconds = Random.Shared.Next(seconds * 500, seconds * 1000 + 1);
+
+        try
+        {
+            await Task.Delay(milliseconds, _cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 
