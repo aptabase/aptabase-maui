@@ -1,3 +1,9 @@
+## Unreleased
+
+* Requeue a failing event or error at the tail of the persistent queue instead of unwinding the read loop, so a single undeliverable item can no longer block everything queued behind it
+* Back off between attempts while sends are failing (30s doubling to a 5 minute cap) instead of retrying every 30s, with jitter so clients do not retry a recovering server in lockstep
+* Observe the shutdown token while backing off, so disposing the client no longer waits out a full retry delay
+
 ## 0.2.0
 
 * Add `TrackError(Exception, fatal)` to `IAptabaseClient` for reporting handled errors and crashes
